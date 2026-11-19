@@ -344,6 +344,129 @@ class DiscordManager:
         }
         self._post_webhook([embed])
 
+    def send_sunday_ic_report(self, meeting_data: Dict[str, Any]):
+        """
+        【毎週日曜 10:00 JST 配信】6役マルチエージェント投資委員会（ファンダ統合・3択決裁リンク付き）レポート送信
+        """
+        if not self.webhook_url or not meeting_data:
+            return
+
+        m_id = meeting_data.get("meeting_id", "IC_SUNDAY")
+        funda = meeting_data.get("fundamental_report") or {}
+        debate = meeting_data.get("agent_debate") or {}
+        alpha = debate.get("alpha_researcher") or {}
+        macro_ex = debate.get("macro_and_execution") or {}
+        auditor = debate.get("red_team_auditor") or {}
+        cio = debate.get("cio_chairman") or {}
+        opts = meeting_data.get("options") or {}
+        urls = meeting_data.get("decision_urls") or {}
+        prev_exp = meeting_data.get("last_week_experiment_result") or {}
+        next_exp = meeting_data.get("next_week_experiment") or {}
+        roadmap = meeting_data.get("mid_long_term_roadmap") or []
+        q_stat = meeting_data.get("ai_quota_status") or {}
+
+        # ① ファンダメンタルズ＆ニュース因果分析
+        f1_text = (
+            f"• **今週の値動き×ニュース因果**: {funda.get('this_week_causal_analysis_ja', '分析済')}\n"
+            f"• **週末新着ニュース＆来週の重要イベント**: {funda.get('weekend_news_and_next_week_events_ja', '監視中')}\n"
+            f"• **🎯 ファンダ推奨フォーカス**: **{funda.get('recommended_focus_ja', '米金利連動重視')}**"
+        )[:1000]
+
+        # ② 6役エージェント激論ハイライト（平均化禁止）
+        f2_text = (
+            f"• **⚡ 核心争点**: `{meeting_data.get('core_agenda_ja', '')}`\n"
+            f"• **🎯 アルファ開拓官 (攻め)**: {alpha.get('bold_proposal_ja', '')}\n"
+            f"• **🌍 マクロ＆⚡執行官 (構造・現場)**: {macro_ex.get('macro_and_execution_view_ja', '')}\n"
+            f"• **🛡️ RedTeam監査官 (反証・過剰適合ブロック)**: {auditor.get('red_team_critique_ja', '')}\n"
+            f"• **⚖️ CIO議長裁定**: **{cio.get('cio_verdict_ja', '')}**"
+        )[:1000]
+
+        # ③ 妥協なき3つの決裁パッケージ（過去21日DBバックテスト実測付き）
+        opt_a = opts.get("A") or {}
+        opt_b = opts.get("B") or {}
+        opt_c = opts.get("C") or {}
+        bt_a = opt_a.get("backtest_21d") or {}
+        bt_b = opt_b.get("backtest_21d") or {}
+        f3_text = (
+            f"• **{opt_a.get('label', '🔥 選択肢A')}**\n"
+            f"  └ {opt_a.get('summary_ja', '')} *(21日DB検証: `¥{float(bt_a.get('simulated_pnl_jpy',0)):+,.0f}` / 現行比 `Δ¥{float(bt_a.get('delta_pnl_jpy',0)):+,.0f}`)*\n"
+            f"• **{opt_b.get('label', '🛡️ 選択肢B')}**\n"
+            f"  └ {opt_b.get('summary_ja', '')} *(21日DB検証: `¥{float(bt_b.get('simulated_pnl_jpy',0)):+,.0f}` / 勝率 `{bt_b.get('simulated_win_rate_pct',0)}%`)*\n"
+            f"• **{opt_c.get('label', '🧪 選択肢C')}**\n"
+            f"  └ {opt_c.get('summary_ja', '')}"
+        )[:1000]
+
+        # ④ 先週の検証答え合わせ ＆ 次週のシャドー検証テーマ
+        f4_text = (
+            f"• **先週の検証採点**: `{prev_exp.get('experiment_title', '週次検証')}` → {prev_exp.get('verdict', '完了')}\n"
+            f"• **🔬 次週（来週1週間）の新シャドー検証テーマ**: **`{next_exp.get('title', '')}`**\n"
+            f"  └ 仮説: {next_exp.get('hypothesis', '')}"
+        )[:1000]
+
+        # ⑤ 中長期（1〜3ヶ月）の修正方針ロードマップ
+        rm_lines = []
+        for item in roadmap[:3]:
+            rm_lines.append(f"• **[優先度:{item.get('priority', 'A')}] {item.get('title', '')}** (`{item.get('status', '計画中')}`)\n  └ {item.get('rationale', '')}")
+        f5_text = ("\n".join(rm_lines) if rm_lines else "• 中長期構造ロードマップ継続監視中")[:1000]
+
+        # ⑥ オーナー決裁ワンタップリンク（HMAC署名付き）
+        dash_url = settings.get_dashboard_url() if hasattr(settings, "get_dashboard_url") else "http://155.133.7.59/dashboard"
+        f6_text = (
+            f"🟢 [**👉 🔥【選択肢A：攻めの改革案】を承認して本番適用**]({urls.get('A', dash_url)})\n"
+            f"🛡️ [**👉 🛡️【選択肢B：守りの堅牢案】を承認して本番適用**]({urls.get('B', dash_url)})\n"
+            f"🧪 [**👉 🧪【選択肢C：本番はB＋裏シャドーでAを実験】を採択 (★CIO推奨)**]({urls.get('C', dash_url)})\n"
+            f"🔴 [**👉 ❌【すべて却下】今週は変更せず完全現状維持**]({urls.get('REJECT', dash_url)})\n"
+            f"📱 [**🌐 ダッシュボードで詳細な議論ログ・パラメータを確認する**]({dash_url})"
+        )[:1000]
+
+        models_info = " / ".join(meeting_data.get("models_used", [])[:3])
+        footer_txt = (
+            f"Sunday AI Investment Committee ({m_id}) • "
+            f"Quota余裕度: {q_stat.get('pro_quota_health_pct', 100)}% ({q_stat.get('recommended_tier_label', 'Tier 1')}) • {models_info}"
+        )[:200]
+
+        embed = {
+            "title": f"🏛️ 【日曜AI投資委員会】6役エージェント激論＆来週方針の決裁要請 ({meeting_data.get('held_at', '')[:10]})",
+            "color": 0xf59e0b,
+            "fields": [
+                {"name": "① 📰 ファンダメンタルズ分析（今週のニュース因果 ＆ 週末ニュース・来週イベント）", "value": f1_text, "inline": False},
+                {"name": "② 🗣️ 6役エージェント激論ハイライト（折衷案・平均化禁止）", "value": f2_text, "inline": False},
+                {"name": "③ ⚔️ 来週の戦術パッケージ（実測DBバックテスト証拠付き3択）", "value": f3_text, "inline": False},
+                {"name": "④ 🔬 先週の検証結果 ＆ 次週（来週1週間）のシャドー検証テーマ", "value": f4_text, "inline": False},
+                {"name": "⑤ 🗺️ 中長期（1〜3ヶ月）のロジック構造修正ロードマップ", "value": f5_text, "inline": False},
+                {"name": "⑥ 👑 オーナー決裁アクション（ワンタップで来週の方針を確定・暗号署名保護）", "value": f6_text, "inline": False},
+            ],
+            "footer": {"text": footer_txt},
+        }
+        self._post_webhook([embed])
+
+    def send_ic_decision_confirmation(
+        self,
+        meeting_data: Dict[str, Any],
+        choice: str,
+        option_data: Dict[str, Any],
+        source: str,
+    ):
+        """オーナーがDiscordまたはダッシュボードから投資委員会の提案を決裁した際の即時アンサー通知"""
+        if not self.webhook_url:
+            return
+        color = 0x10b981 if choice != "REJECT" else 0x64748b
+        params_str = json.dumps(option_data.get("params") or {}, ensure_ascii=False)
+        next_exp = (meeting_data.get("next_week_experiment") or {}).get("title", "シャドー検証継続")
+        embed = {
+            "title": f"✅ 【投資委員会・オーナー決裁完了】 選択肢 [{choice}] を適用しました",
+            "color": color,
+            "description": (
+                f"**採択パッケージ**: {option_data.get('label', choice)}\n"
+                f"**適用内容**: {option_data.get('summary_ja', '')}\n"
+                f"**反映パラメータ**: `{params_str}`\n"
+                f"**次週シャドー検証テーマ**: `{next_exp}`\n"
+                f"**決裁経路**: `{source}` (`{meeting_data.get('meeting_id', '')}`)"
+            ),
+            "footer": {"text": f"XAU/USD AI Investment Committee • {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"},
+        }
+        self._post_webhook([embed])
+
     def send_circuit_breaker_alert(self, reason: str):
         """緊急停止（サーキットブレーカー）アラート"""
         if not self.webhook_url:

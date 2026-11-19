@@ -139,6 +139,33 @@ class TVWebhookServer:
         self.port = port
         self._server: Optional[ThreadingHTTPServer] = None
         self._thread: Optional[threading.Thread] = None
+        self._sec_lock = threading.Lock()
+        self._failed_ips: Dict[str, list] = {}
+        self._banned_ips: Dict[str, float] = {}
+
+    def _is_ip_banned(self, ip: str) -> bool:
+        now_ts = time.time()
+        with self._sec_lock:
+            ban_until = self._banned_ips.get(ip, 0.0)
+            if ban_until > now_ts:
+                return True
+            if ban_until > 0:
+                self._banned_ips.pop(ip, None)
+            return False
+
+    def _record_auth_failure(self, ip: str) -> None:
+        now_ts = time.time()
+        with self._sec_lock:
+            arr = [ts for ts in self._failed_ips.get(ip, []) if now_ts - ts < 600.0]
+            arr.append(now_ts)
+            self._failed_ips[ip] = arr
+            if len(arr) >= 6:
+                self._banned_ips[ip] = now_ts + 86400.0  # 24時間IPバン
+                print(f"🛡️ [SECURITY IP BAN] ブルートフォース検知によりIP {ip} を24時間遮断しました。")
+
+    def _clear_auth_failure(self, ip: str) -> None:
+        with self._sec_lock:
+            self._failed_ips.pop(ip, None)
 
     def _build_handler(self):
         store = self.store
@@ -150,14 +177,20 @@ class TVWebhookServer:
             def log_message(self, format: str, *args: Any) -> None:
                 return
 
+            def _add_security_headers(self) -> None:
+                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+                self.send_header("Pragma", "no-cache")
+                self.send_header("Expires", "0")
+                self.send_header("X-Frame-Options", "DENY")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("Referrer-Policy", "no-referrer")
+
             def _send_json(self, status_code: int, body: Dict[str, Any]) -> None:
                 raw = json.dumps(body, ensure_ascii=False).encode("utf-8")
                 self.send_response(status_code)
                 self.send_header("Content-Type", "application/json; charset=utf-8")
                 self.send_header("Content-Length", str(len(raw)))
-                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-                self.send_header("Pragma", "no-cache")
-                self.send_header("Expires", "0")
+                self._add_security_headers()
                 self.end_headers()
                 self.wfile.write(raw)
 
@@ -166,13 +199,14 @@ class TVWebhookServer:
                 self.send_response(status_code)
                 self.send_header("Content-Type", "text/html; charset=utf-8")
                 self.send_header("Content-Length", str(len(raw)))
-                self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-                self.send_header("Pragma", "no-cache")
-                self.send_header("Expires", "0")
+                self._add_security_headers()
                 self.end_headers()
                 self.wfile.write(raw)
 
             def _check_dashboard_auth(self, query_str: str, payload: Optional[Dict[str, Any]] = None) -> bool:
+                client_ip = self.client_address[0]
+                if server_ref._is_ip_banned(client_ip):
+                    return False
                 qs = urllib.parse.parse_qs(query_str)
                 q_key = (qs.get("key") or [""])[0]
                 h_key = self.headers.get("X-Dashboard-Key") or ""
@@ -180,9 +214,19 @@ class TVWebhookServer:
                 provided = (q_key or h_key or p_key).strip()
                 if not dashboard_key:
                     return True
-                return hmac.compare_digest(provided, dashboard_key) or hmac.compare_digest(provided, secret_token)
+                ok = hmac.compare_digest(provided, dashboard_key) or hmac.compare_digest(provided, secret_token)
+                if ok:
+                    server_ref._clear_auth_failure(client_ip)
+                elif provided:
+                    server_ref._record_auth_failure(client_ip)
+                return ok
 
             def do_GET(self) -> None:
+                client_ip = self.client_address[0]
+                if server_ref._is_ip_banned(client_ip):
+                    self._send_json(429, {"error": "ip_temporarily_blocked_by_security_guard"})
+                    return
+
                 parts = self.path.split("?", 1)
                 path = parts[0]
                 q_str = parts[1] if len(parts) > 1 else ""
@@ -199,7 +243,56 @@ class TVWebhookServer:
                     })
                     return
 
+                # Discord ワンタップ決裁エンドポイント (HMAC-SHA256 署名検証)
+                if path == "/api/ic/decide":
+                    qs = urllib.parse.parse_qs(q_str)
+                    m_id = (qs.get("meeting_id") or [""])[0]
+                    choice = (qs.get("choice") or [""])[0]
+                    exp_s = (qs.get("exp") or ["0"])[0]
+                    sig = (qs.get("sig") or [""])[0]
+                    if server_ref.api_dispatcher:
+                        res = server_ref.api_dispatcher("POST", "/api/ic/decide_signed", {
+                            "meeting_id": m_id,
+                            "choice": choice,
+                            "exp": int(exp_s) if exp_s.isdigit() else 0,
+                            "sig": sig,
+                            "client_ip": client_ip,
+                        })
+                        if not res.get("success"):
+                            server_ref._record_auth_failure(client_ip)
+                        dash_url = f"/dashboard?key={dashboard_key}"
+                        status_color = "#10b981" if res.get("success") else "#ef4444"
+                        title_txt = "✅ 投資委員会・オーナー決裁完了" if res.get("success") else "⚠️ 決裁エラー"
+                        html_page = (
+                            "<!DOCTYPE html><html lang='ja'><head><meta charset='utf-8'>"
+                            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+                            f"<title>{title_txt}</title>"
+                            "<style>body{background:#0b0f17;color:#e2e8f0;font-family:sans-serif;padding:24px;display:flex;justify-content:center;align-items:center;min-height:85vh;margin:0}"
+                            f".card{{background:#151c2c;border:2px solid {status_color};border-radius:16px;padding:24px;max-width:480px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.5)}}"
+                            f"h2{{color:{status_color};margin-top:0;font-size:20px}}"
+                            "p{line-height:1.6;font-size:14px;color:#cbd5e1}"
+                            ".btn{display:block;text-align:center;background:#3b82f6;color:#fff;text-decoration:none;padding:14px;border-radius:10px;font-weight:bold;margin-top:20px}"
+                            "</style></head><body><div class='card'>"
+                            f"<h2>{title_txt}</h2>"
+                            f"<p><strong>結果:</strong> {res.get('message', '')}</p>"
+                            f"<p>{res.get('summary_ja', '')}</p>"
+                            f"<a class='btn' href='{dash_url}'>📱 クオンツ管理ダッシュボードを開く</a>"
+                            "</div></body></html>"
+                        )
+                        self._send_html(200 if res.get("success") else 403, html_page)
+                    else:
+                        self._send_json(503, {"error": "dispatcher_not_ready"})
+                    return
+
                 if path == "/dashboard":
+                    if not self._check_dashboard_auth(q_str):
+                        self._send_html(
+                            403,
+                            "<!DOCTYPE html><html lang='ja'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>403 Restricted</title></head>"
+                            "<body style='background:#0b0f17;color:#94a3b8;font-family:sans-serif;text-align:center;padding-top:20vh'>"
+                            "<h3>🔒 Protected Institutional Quant Terminal</h3><p>有効なアクセスキー付きURLからアクセスしてください。</p></body></html>",
+                        )
+                        return
                     self._send_html(200, get_dashboard_html())
                     return
 
@@ -220,6 +313,11 @@ class TVWebhookServer:
                 self._send_json(404, {"error": "not_found"})
 
             def do_POST(self) -> None:
+                client_ip = self.client_address[0]
+                if server_ref._is_ip_banned(client_ip):
+                    self._send_json(429, {"error": "ip_temporarily_blocked_by_security_guard"})
+                    return
+
                 parts = self.path.split("?", 1)
                 path = parts[0]
                 q_str = parts[1] if len(parts) > 1 else ""
@@ -249,9 +347,11 @@ class TVWebhookServer:
                     ).strip()
 
                     if not secret_token or not hmac.compare_digest(provided_token, secret_token):
-                        print(f"[TV WEBHOOK REJECTED] 不正トークンからのアクセス (IP: {self.client_address[0]})")
+                        server_ref._record_auth_failure(client_ip)
+                        print(f"[TV WEBHOOK REJECTED] 不正トークンからのアクセス (IP: {client_ip})")
                         self._send_json(401, {"error": "unauthorized"})
                         return
+                    server_ref._clear_auth_failure(client_ip)
 
                     entry = store.record_signal(payload)
                     print(

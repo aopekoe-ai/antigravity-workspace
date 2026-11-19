@@ -347,8 +347,21 @@ def get_dashboard_html() -> str:
     </div>
   </section>
 
-  <!-- ==================== TAB 3: LAB (本格検証) ==================== -->
+  <!-- ==================== TAB 3: LAB (本格検証 & 日曜AI投資委員会) ==================== -->
   <section id="tab-lab" class="tab-pane">
+    <div class="card" style="border:1px solid rgba(245,158,11,0.45);">
+      <div class="card-title" style="flex-wrap:wrap;gap:8px;">
+        <span>🏛️ 日曜AI投資委員会（6役エージェント激論・ファンダメンタルズ統合・次週検証＆中長期方針）</span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span id="ic-quota-badge" class="badge gold">AI Quota: 確認中</span>
+          <button class="btn btn-sm btn-gold" onclick="confirmTriggerLabTask('sunday_ic_meeting')">🏛️ 今すぐ投資委員会を開催＆Discord決裁送信</button>
+        </div>
+      </div>
+      <div id="ic-committee-box" style="font-size:12px;">
+        <div style="color:var(--muted);padding:10px;">投資委員会データを読み込み中...（日曜 10:00 JST 自動開催、または上のボタンで今すぐ開催できます）</div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-title">
         <span>🎛️ 「もしも（What-If）」スライダー高速バックテスト（現行 vs 変更後シミュレーション）</span>
@@ -1049,6 +1062,108 @@ function renderShadowAndStudy(st) {
     <div style="margin-bottom:6px;"><strong>自動適用バイアス重み:</strong> ドル指数(DXY) = <strong class="text-gold">${wts.dxy_weight || 0.7}</strong> ／ 米金利(US10Y/USDJPY) = <strong class="text-gold">${wts.yield_weight || 0.3}</strong></div>
     <div><strong>M1リードラグ（ショック後の順行勝率）:</strong> ${Object.entries(ll).map(([k,v]) => `<span class="badge violet">${k.replace('t_plus_','+')}: 勝率${v.directional_hit_rate_pct}% (${v.avg_favorable_pips>=0?'+':''}${v.avg_favorable_pips}p)</span>`).join(' ')}</div>
   `;
+
+  // 日曜AI投資委員会＆AIモデルクォータ状態の描画
+  const qSt = st.ai_quota_status || {};
+  const qBadge = document.getElementById('ic-quota-badge');
+  if (qBadge) {
+    const qPct = qSt.pro_quota_health_pct !== undefined ? qSt.pro_quota_health_pct : 100;
+    qBadge.textContent = `🧠 ${qSt.recommended_tier_label || 'Tier 1: Pro Deep'} (余裕度 ${qPct}%)`;
+    qBadge.className = 'badge ' + (qPct >= 60 ? 'bull' : (qPct >= 25 ? 'gold' : 'bear'));
+  }
+
+  const ic = st.investment_committee || {};
+  const icBox = document.getElementById('ic-committee-box');
+  if (icBox) {
+    if (!ic.meeting_id) {
+      icBox.innerHTML = `<div style="padding:12px;background:var(--card-alt);border-radius:10px;color:var(--muted);">
+        まだ投資委員会議事録がありません。毎週土曜 08:00 JST に徹底検証、日曜 10:00 JST に6役エージェント会議が自動開催されDiscordへ決裁通知が届きます。<br>
+        右上の「<strong>🏛️ 今すぐ投資委員会を開催＆Discord決裁送信</strong>」ボタンを押すと、今すぐ最新データと最新ニュースで会議を実行できます。
+      </div>`;
+    } else {
+      const f = ic.fundamental_report || {};
+      const deb = ic.agent_debate || {};
+      const alpha = deb.alpha_researcher || {};
+      const macEx = deb.macro_and_execution || {};
+      const aud = deb.red_team_auditor || {};
+      const cio = deb.cio_chairman || {};
+      const opts = ic.options || {};
+      const nExp = ic.next_week_experiment || {};
+      const rMap = ic.mid_long_term_roadmap || [];
+      const stBadge = ic.status === 'APPROVED'
+        ? `<span class="badge bull">✅ 決裁完了: 選択肢 ${ic.approved_choice} (${ic.approved_at || ''})</span>`
+        : (ic.status === 'REJECTED_KEEP_CURRENT'
+            ? `<span class="badge">🔴 却下・現状維持 (${ic.approved_at || ''})</span>`
+            : `<span class="badge gold">⏳ オーナー決裁待ち (推奨: 選択肢 ${ic.recommended_choice || 'C'})</span>`);
+
+      icBox.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:10px;padding:8px 10px;background:var(--card-alt);border-radius:8px;">
+          <div><strong>議事録ID:</strong> <code>${ic.meeting_id}</code> <span style="color:var(--muted);font-size:11px;">(${ic.held_at || ''})</span></div>
+          <div>${stBadge}</div>
+        </div>
+
+        <div class="impact-explain" style="margin-bottom:10px;">
+          <div style="font-weight:800;color:var(--gold);margin-bottom:4px;">📰 1. ファンダメンタルズ＆地政学インテリジェンス分析</div>
+          <div>・<strong>今週の値動き×ニュース因果:</strong> ${f.this_week_causal_analysis_ja || ''}</div>
+          <div>・<strong>週末新着ニュース＆来週イベント:</strong> ${f.weekend_news_and_next_week_events_ja || ''}</div>
+          <div>・<strong>🎯 来週のファンダ狙い目:</strong> <strong class="text-bull">${f.recommended_focus_ja || ''}</strong></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div class="pos-slot" style="border-left:3px solid var(--gold);">
+            <div style="font-weight:800;color:var(--gold);margin-bottom:3px;">🎯 アルファ開拓官 (攻め・平均化禁止)</div>
+            <div style="font-size:11px;line-height:1.5;">${alpha.bold_proposal_ja || ''}</div>
+          </div>
+          <div class="pos-slot" style="border-left:3px solid var(--bear);">
+            <div style="font-weight:800;color:var(--bear);margin-bottom:3px;">🛡️ RedTeam リスク監査官 (反証・過剰適合ブロック)</div>
+            <div style="font-size:11px;line-height:1.5;">${aud.red_team_critique_ja || ''}<br><strong style="color:var(--text);">監査結論:</strong> ${aud.risk_audit_verdict_ja || ''}</div>
+          </div>
+          <div class="pos-slot" style="border-left:3px solid var(--primary);">
+            <div style="font-weight:800;color:#60a5fa;margin-bottom:3px;">🌍 マクロ戦略官 ＆ ⚡ 執行分析官</div>
+            <div style="font-size:11px;line-height:1.5;">${macEx.macro_and_execution_view_ja || ''}</div>
+          </div>
+          <div class="pos-slot" style="border-left:3px solid var(--bull);">
+            <div style="font-weight:800;color:var(--bull);margin-bottom:3px;">⚖️ CIO 最高投資責任者 (最終裁定)</div>
+            <div style="font-size:11px;line-height:1.5;"><strong>核心争点:</strong> ${ic.core_agenda_ja || ''}<br>${cio.cio_verdict_ja || ''}</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div class="impact-card">
+            <div style="font-weight:800;color:#a78bfa;margin-bottom:4px;">🔬 次週（来週1週間）のシャドー検証テーマ</div>
+            <div style="font-weight:700;margin-bottom:3px;">『${nExp.title || ''}』</div>
+            <div style="font-size:11px;color:var(--muted);">${nExp.hypothesis || ''}</div>
+          </div>
+          <div class="impact-card">
+            <div style="font-weight:800;color:#38bdf8;margin-bottom:4px;">🗺️ 中長期（1〜3ヶ月）のロジック構造修正方針</div>
+            ${rMap.map(r => `<div style="font-size:11px;margin-bottom:3px;">・<strong>[優先度:${r.priority}] ${r.title}</strong> <span class="badge">${r.status || ''}</span></div>`).join('')}
+          </div>
+        </div>
+
+        <div style="background:rgba(15,23,42,0.85);padding:10px;border-radius:10px;border:1px solid var(--border);">
+          <div style="font-weight:800;margin-bottom:8px;color:var(--gold);">👑 オーナー決裁アクション（平均化なしの3択パッケージ ＋ 却下）</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:8px;">
+            <button class="btn" style="background:rgba(245,158,11,0.16);border:1px solid var(--gold);color:var(--text);text-align:left;padding:10px;" onclick="confirmIcDecision('A', '${ic.meeting_id}')">
+              <div style="font-weight:800;color:var(--gold);">🔥 選択肢A（攻め）を採択</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:3px;">${(opts.A||{}).summary_ja || ''}</div>
+            </button>
+            <button class="btn" style="background:rgba(59,130,246,0.16);border:1px solid #3b82f6;color:var(--text);text-align:left;padding:10px;" onclick="confirmIcDecision('B', '${ic.meeting_id}')">
+              <div style="font-weight:800;color:#60a5fa;">🛡️ 選択肢B（守り）を採択</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:3px;">${(opts.B||{}).summary_ja || ''}</div>
+            </button>
+            <button class="btn" style="background:rgba(16,185,129,0.18);border:2px solid var(--bull);color:var(--text);text-align:left;padding:10px;" onclick="confirmIcDecision('C', '${ic.meeting_id}')">
+              <div style="font-weight:800;color:var(--bull);">🧪 選択肢C（本番B＋裏シャドーでA検証）★推奨</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:3px;">${(opts.C||{}).summary_ja || ''}</div>
+            </button>
+            <button class="btn" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--muted);text-align:left;padding:10px;" onclick="confirmIcDecision('REJECT', '${ic.meeting_id}')">
+              <div style="font-weight:800;color:#cbd5e1;">🔴 すべて却下（現状維持）</div>
+              <div style="font-size:10px;color:var(--muted);margin-top:3px;">現行パラメータのまま変更せず継続</div>
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  }
 }
 
 function renderAnalytics(st) {
@@ -1408,10 +1523,33 @@ async function switchBrokerAccount() {
 }
 
 function confirmTriggerLabTask(task) {
-  const desc = task === 'daily_report'
-    ? '今すぐ6ブロック日次運用ブリーフィングを生成してDiscordへ送信しますか？\n（※Gemini APIを1回呼び出します）'
-    : '今すぐ最新M5/M1データで週末相関・リードラグ検証を再計算し、結果をDiscordへ送信しますか？\n（※AIトークン消費はゼロです）';
+  let desc = '';
+  if (task === 'daily_report') {
+    desc = '今すぐ6ブロック日次運用ブリーフィングを生成してDiscordへ送信しますか？\n（※Gemini APIを1回呼び出します）';
+  } else if (task === 'sunday_ic_meeting') {
+    desc = '今すぐ【6役マルチエージェントAI投資委員会】を開催しますか？\n\n・土曜ディープ検証＆21日What-Ifバックテスト\n・最新ファンダメンタルズ＆ニュース取得\n・6役独立セッション議論（クォータ連動・最上位モデル優先）\n・Discordへワンタップ決裁通知を送信します（所要約15〜30秒）';
+  } else {
+    desc = '今すぐ最新M5/M1データで土曜ディープ検証（相関・リードラグ・What-Ifバックテスト）を再計算し、結果をDiscordへ送信しますか？\n（※AIトークン消費はゼロです）';
+  }
   openConfirmModal('📨 手動実行の確認', desc, () => triggerLabTask(task));
+}
+
+function confirmIcDecision(choice, meetingId) {
+  const names = {
+    'A': '🔥 選択肢A：【攻め】アルファ開拓＆ファンダ順張り特化パッケージを本番適用',
+    'B': '🛡️ 選択肢B：【守り】ノイズSL完全防御＆高勝率イグジット改善パッケージを本番適用',
+    'C': '🧪 選択肢C：【ハイブリッド（推奨）】本番は🛡️選択肢Bを適用し、裏シャドー枠で🔥選択肢A＆次週テーマを1週間検証',
+    'REJECT': '🔴 却下：今週の提案はすべて見送り（完全現状維持）'
+  };
+  openConfirmModal(
+    '👑 投資委員会 オーナー決裁の確認',
+    `以下の決裁を確定し、システムへ反映（およびDiscordへ決裁完了通知）してよろしいですか？\n\n👉 ${names[choice] || choice}`,
+    async () => {
+      const r = await apiCall('/api/ic/decide_dashboard', 'POST', {choice, meeting_id: meetingId});
+      showToast(r.message || `選択肢 ${choice} を採択しました！`, !r.success);
+      refreshAll();
+    }
+  );
 }
 
 async function triggerLabTask(task) {

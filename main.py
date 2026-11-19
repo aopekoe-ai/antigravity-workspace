@@ -17,6 +17,7 @@ from strategies.smc_liquidity_strategy import SMCLiquiditySweepStrategy
 from ai.macro_nlp_guard import MacroNLPGuard
 from ai.committee_evaluator import AICommitteeEvaluator
 from core.review_engine import ReviewEngine
+from core.investment_committee import WeekendInvestmentCommittee
 from notifications.discord_manager import DiscordManager
 
 JST = datetime.timezone(datetime.timedelta(hours=9))
@@ -83,6 +84,12 @@ def run_trading_daemon():
     committee_evaluator = AICommitteeEvaluator()
     review_engine = ReviewEngine()
     discord_mgr = DiscordManager()
+    investment_committee = WeekendInvestmentCommittee(
+        quant_db=quant_db,
+        review_engine=review_engine,
+        weekend_lab=weekend_lab,
+        discord_mgr=discord_mgr,
+    )
 
     # ダッシュボード表示用オンメモリスナップショット
     live_cache: Dict[str, Any] = {
@@ -185,6 +192,8 @@ def run_trading_daemon():
                 "recent_trades": recent_trades,
                 "shadow_scorecard": quant_db.get_shadow_scorecard(days=7),
                 "weekend_study": w_study,
+                "investment_committee": investment_committee.load_latest_meeting(),
+                "ai_quota_status": investment_committee.router.get_quota_status(),
                 "m1_series": quant_db.get_recent_macro_series(limit=90),
                 "dynamic_params": dyn_params,
                 "control_config": {
@@ -368,6 +377,29 @@ def run_trading_daemon():
                 days=int(payload.get("days", 14)),
             )
 
+        if method == "POST" and path == "/api/ic/decide_signed":
+            m_id = str(payload.get("meeting_id", ""))
+            choice = str(payload.get("choice", "")).upper().strip()
+            exp_ts = int(payload.get("exp", 0))
+            sig = str(payload.get("sig", ""))
+            ok, msg = investment_committee.verify_decision_token(m_id, choice, exp_ts, sig)
+            if not ok:
+                return {"success": False, "message": msg}
+            return investment_committee.apply_owner_decision(
+                choice=choice,
+                meeting_id=m_id,
+                source="DISCORD_ONE_TAP_SIGNED",
+            )
+
+        if method == "POST" and path == "/api/ic/decide_dashboard":
+            choice = str(payload.get("choice", "")).upper().strip()
+            m_id = str(payload.get("meeting_id", "")) or None
+            return investment_committee.apply_owner_decision(
+                choice=choice,
+                meeting_id=m_id,
+                source="WEB_DASHBOARD_OWNER",
+            )
+
         if method == "POST" and path == "/api/lab/trigger":
             task = str(payload.get("task", ""))
             with mt5_lock:
@@ -382,11 +414,19 @@ def run_trading_daemon():
                     )
                     discord_mgr.send_daily_review_report(eval_d)
                     return {"success": True, "message": "6ブロック日次運用ブリーフィングをDiscordへ送信しました！"}
-                elif task == "weekend_study":
-                    study_res = weekend_lab.run_weekend_study()
+                elif task in ("weekend_study", "saturday_deep_lab"):
+                    ev = investment_committee.run_saturday_deep_lab()
+                    study_res = ev.get("macro_study") or weekend_lab.load_latest_study()
                     w_stats = review_engine.get_weekly_summary()
                     discord_mgr.send_weekend_research_report(study_res, w_stats)
-                    return {"success": True, "message": "最新相関・リードラグ検証を実行しDiscordへ送信しました！"}
+                    return {"success": True, "message": "土曜ディープ検証（相関・リードラグ・What-If全バックテスト）を実行しDiscordへ送信しました！"}
+                elif task == "sunday_ic_meeting":
+                    ic_res = investment_committee.run_sunday_investment_committee(trigger_source="DASHBOARD_MANUAL_TRIGGER")
+                    return {
+                        "success": True,
+                        "message": f"6役AI投資委員会 ({ic_res.get('meeting_id')}) を開催し、Discordへ3択決裁通知を送信しました！",
+                        "meeting": ic_res,
+                    }
             return {"success": False, "message": "不明なタスクです"}
 
         return {"error": "unknown_route"}
@@ -432,6 +472,7 @@ def run_trading_daemon():
     last_hourly_report_hour = -1
     last_daily_review_day = -1
     last_weekend_study_date = None
+    last_sunday_ic_date = None
     last_signal_bar_time = None
     last_macro_entry_ts = 0.0
     last_logged_macro_source = None
@@ -462,15 +503,23 @@ def run_trading_daemon():
                     was_weekend_closed = True
 
                 today_jst_str = now_jst.strftime("%Y-%m-%d")
+                # 1. 土曜 08:00 JST: 徹底検証（相関・リードラグ・What-If全バックテスト・週間ニュース因果照合）
                 if now_jst.weekday() == 5 and now_jst.hour >= 8 and last_weekend_study_date != today_jst_str:
                     with mt5_lock:
-                        study_res = weekend_lab.run_weekend_study()
+                        ev = investment_committee.run_saturday_deep_lab()
+                        study_res = ev.get("macro_study") or weekend_lab.load_latest_study()
                         weekly_stats = review_engine.get_weekly_summary()
                         if notify_weekend:
                             discord_mgr.send_weekend_research_report(study_res, weekly_stats)
                         review_engine.log_maintainer.run_maintenance()
                         quant_db.prune_old_records(keep_days=90)
                     last_weekend_study_date = today_jst_str
+
+                # 2. 日曜 10:00 JST: 6役マルチエージェント投資委員会（最新週末ニュース反映＋3択決裁リンクDiscord通知）
+                if now_jst.weekday() == 6 and now_jst.hour >= 10 and last_sunday_ic_date != today_jst_str:
+                    with mt5_lock:
+                        investment_committee.run_sunday_investment_committee(trigger_source="SUNDAY_10AM_AUTO")
+                    last_sunday_ic_date = today_jst_str
 
                 time.sleep(60)
                 continue
