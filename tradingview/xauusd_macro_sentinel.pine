@@ -1,19 +1,20 @@
-//@version=5
+//@version=6
 indicator("XAUUSD Macro Sentinel v9.0 (DXY + US10Y + SMT)", overlay=true, max_labels_count=100)
 
 // ============================================================================
-// XAU/USD AI Hedge Fund v9.0 - TradingView Premium 主系先行指標インジケーター
+// XAU/USD AI Hedge Fund v9.0 - TradingView Premium 主系先行指標インジケーター (Pine Script v6)
 // 【使い方】
 // 1. XAUUSD (例: OANDA:XAUUSD または EXNESS:XAUUSD) の「1分足 (1m)」チャートに適用
-// 2. パラメータの Webhook Token にVPS設定済みのトークンを入力
+// 2. パラメータの Webhook Token にトークンを入力:
+//    xau_tv_bf1070083835494b5efc77e3b4bfb82c
 // 3. アラート作成:
-//    - 条件: "XAUUSD Macro Sentinel v9.0" -> "alert() 関数呼び出しのみ"
+//    - 条件: "XAUUSD Macro Sentinel v9.0 (DXY + US10Y + SMT)" -> "alert() 関数呼び出しのみ"
 //    - Webhook URL: http://155.133.7.59/tv-webhook
-//    - ※メッセージ欄は空欄のままでOK（スクリプトからJSONを自動送信します）
+//    - メッセージ欄は空欄（スクリプトから自動生成）
 // ============================================================================
 
 // --- 設定パラメータ ---
-webhookToken = input.string("REPLACE_WITH_YOUR_TV_WEBHOOK_TOKEN", "Webhook Token", group="VPS Webhook")
+webhookToken = input.string("xau_tv_bf1070083835494b5efc77e3b4bfb82c", "Webhook Token", group="VPS Webhook")
 dxySym       = input.symbol("TVC:DXY", "ドル指数 (DXY)", group="先行指標シンボル")
 us10ySym     = input.symbol("TVC:US10Y", "米10年債利回り (US10Y)", group="先行指標シンボル")
 us02ySym     = input.symbol("TVC:US02Y", "米2年債利回り (US02Y)", group="先行指標シンボル")
@@ -91,20 +92,9 @@ dxyBounceUp   = (dxyC > dxyO) or ((dxyC - dxyRecLow) >= dxyRecRange * 0.30)
 smtBuy  = (dxyRecHigh > dxyRefHigh) and (xauRecLow > xauRefLow + minDiv) and dxyRejectDown and (close > open) and (close >= xauEma9)
 smtSell = (dxyRecLow < dxyRefLow)   and (xauRecHigh < xauRefHigh - minDiv) and dxyBounceUp  and (close < open) and (close <= xauEma9)
 
-// --- JSON生成ヘルパー（確定足のみ送信＝完全非リペイント） ---
+// --- JSON生成ヘルパー（Pine Script v6対応・改行構文エラー完全解消） ---
 f_build_json(string sigType, string dir, float strVal, string detailTxt) =>
-    '{"token":"' + webhookToken +
-    '","symbol":"XAUUSD"' +
-    ',"signal_type":"' + sigType +
-    '","direction":"' + dir +
-    '","dxy_z":' + str.tostring(nz(dxyZ, 0.0), "0.000") +
-    ',"us10y_z":' + str.tostring(nz(us10yZ, 0.0), "0.000") +
-    ',"us02y_z":' + str.tostring(nz(us02yZ, 0.0), "0.000") +
-    ',"bias_score":' + str.tostring(nz(biasScore, 0.0), "0.000") +
-    ',"strength":' + str.tostring(nz(strVal, 1.0), "0.00") +
-    ',"dxy_above_m5_ema20":' + (dxyAboveEma ? "true" : "false") +
-    ',"us10y_above_m5_ema20":' + (us10yAboveEma ? "true" : "false") +
-    ',"detail":"' + detailTxt + '"}'
+    str.format('{{\"token\":\"{0}\",\"symbol\":\"XAUUSD\",\"signal_type\":\"{1}\",\"direction\":\"{2}\",\"dxy_z\":{3},\"us10y_z\":{4},\"us02y_z\":{5},\"bias_score\":{6},\"strength\":{7},\"dxy_above_m5_ema20\":{8},\"us10y_above_m5_ema20\":{9},\"detail\":\"{10}\"}}', webhookToken, sigType, dir, str.tostring(nz(dxyZ, 0.0), "0.000"), str.tostring(nz(us10yZ, 0.0), "0.000"), str.tostring(nz(us02yZ, 0.0), "0.000"), str.tostring(nz(biasScore, 0.0), "0.000"), str.tostring(nz(strVal, 1.0), "0.00"), dxyAboveEma ? "true" : "false", us10yAboveEma ? "true" : "false", detailTxt)
 
 // --- Webhook発火制御 (1分足確定時のみ) ---
 if barstate.isconfirmed
