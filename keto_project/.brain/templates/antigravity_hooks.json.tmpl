@@ -1,0 +1,19 @@
+{
+  "portable-brain-gate": {
+    "enabled": true,
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python ../.brain/scripts/checkpoint.py --agy-pre",
+        "timeout": 10
+      }
+    ],
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "python ../.brain/scripts/verify_gate.py --agy-hook",
+        "timeout": 10
+      }
+    ]
+  }
+}

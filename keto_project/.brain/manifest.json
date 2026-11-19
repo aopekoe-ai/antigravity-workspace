@@ -1,0 +1,42 @@
+{
+  "installed_at": "2026-11-19T10:48:21",
+  "enabled": true,
+  "installed_ais": [
+    "antigravity",
+    "claude",
+    "web"
+  ],
+  "files": {
+    ".agents/rules/brain-adapter.md": {
+      "ai": "antigravity",
+      "mode": "created",
+      "updated_at": "2026-11-19T10:48:21"
+    },
+    ".agents/skills/portable-brain/SKILL.md": {
+      "ai": "antigravity",
+      "mode": "created",
+      "updated_at": "2026-11-19T10:48:21"
+    },
+    ".agents/hooks.json": {
+      "ai": "antigravity",
+      "mode": "created",
+      "updated_at": "2026-11-19T10:48:21"
+    },
+    ".brain/web_bootstrap_prompt.md": {
+      "ai": "web",
+      "mode": "created",
+      "updated_at": "2026-11-19T10:48:21"
+    },
+    "CLAUDE.md": {
+      "ai": "claude",
+      "mode": "created",
+      "updated_at": "2026-11-19T10:48:21"
+    },
+    ".claude/settings.json": {
+      "ai": "claude",
+      "mode": "created",
+      "updated_at": "2026-11-19T10:48:21"
+    }
+  },
+  "updated_at": "2026-11-19T10:48:21"
+}
