@@ -400,6 +400,14 @@ def run_trading_daemon():
                 source="WEB_DASHBOARD_OWNER",
             )
 
+        if method == "POST" and path == "/api/ic/publish_neon":
+            rec = investment_committee.publish_antigravity_neon_meeting(payload)
+            return {
+                "success": True,
+                "message": f"Antigravity (Gemini 4 Neon) 6役投資委員会議事録 ({rec.get('meeting_id')}) を反映し、Discordへ決裁通知を送信しました！",
+                "meeting_id": rec.get("meeting_id"),
+            }
+
         if method == "POST" and path == "/api/lab/trigger":
             task = str(payload.get("task", ""))
             with mt5_lock:

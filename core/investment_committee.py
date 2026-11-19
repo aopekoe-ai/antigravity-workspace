@@ -547,6 +547,17 @@ class WeekendInvestmentCommittee:
     # ------------------------------------------------------------------
     def run_sunday_investment_committee(self, trigger_source: str = "SUNDAY_AUTO_SCHEDULE") -> Dict[str, Any]:
         now_dt = datetime.datetime.now(JST)
+        today_prefix = now_dt.strftime("%Y-%m-%d")
+        if trigger_source == "SUNDAY_10AM_AUTO":
+            existing = self.load_latest_meeting()
+            if (
+                existing
+                and str(existing.get("held_at", "")).startswith(today_prefix)
+                and "NEON" in str(existing.get("trigger_source", "")).upper()
+            ):
+                print("🏛️ [SUNDAY IC SKIP] 本日すでに Antigravity (Gemini 4 Neon) による投資委員会が完了しているため、VPSフォールバック実行をスキップします。")
+                return existing
+
         now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S JST")
         meeting_id = f"IC_{now_dt.strftime('%Y%m%d_%H%M%S')}"
         print(f"🏛️ [SUNDAY INVESTMENT COMMITTEE] 6役マルチエージェント投資委員会を開催します (id={meeting_id}, trigger={trigger_source})...")
@@ -832,6 +843,104 @@ class WeekendInvestmentCommittee:
             self.discord_mgr.send_sunday_ic_report(meeting_record)
 
         print(f"✅ [SUNDAY INVESTMENT COMMITTEE COMPLETE] 議事録保存＆Discord決裁通知完了 (id={meeting_id})")
+        return meeting_record
+
+    def publish_antigravity_neon_meeting(self, neon_payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Antigravity (Gemini 4 Neon サブエージェント群) で開催された本命の投資委員会議事録を受理し、
+        HMAC-SHA256署名付きワンタップ決裁URLを付与して保存＆Discordへ配信する。
+        """
+        now_dt = datetime.datetime.now(JST)
+        now_str = now_dt.strftime("%Y-%m-%d %H:%M:%S JST")
+        meeting_id = str(neon_payload.get("meeting_id") or f"IC_NEON_{now_dt.strftime('%Y%m%d_%H%M%S')}")
+
+        evidence = self.load_saturday_evidence()
+        pkgs = evidence.get("candidate_packages", {})
+        pkg_a = pkgs.get("PACKAGE_A_OFFENSIVE", {})
+        pkg_b = pkgs.get("PACKAGE_B_DEFENSIVE", {})
+        bt_a = pkg_a.get("backtest_21d", {})
+        bt_b = pkg_b.get("backtest_21d", {})
+        cur_p = evidence.get("current_dynamic_params", {})
+
+        decision_urls = self.build_decision_urls(meeting_id)
+        roadmap_mem = self.load_roadmap_memory()
+
+        if neon_payload.get("next_week_experiment"):
+            roadmap_mem["active_weekly_experiment"] = neon_payload["next_week_experiment"]
+        if isinstance(neon_payload.get("mid_long_term_roadmap"), list) and neon_payload["mid_long_term_roadmap"]:
+            roadmap_mem["mid_long_term_roadmap"] = neon_payload["mid_long_term_roadmap"]
+        self.save_roadmap_memory(roadmap_mem)
+
+        custom_opts = neon_payload.get("options") or {}
+        opt_a_params = (custom_opts.get("A") or {}).get("params") or pkg_a.get("params", {})
+        opt_b_params = (custom_opts.get("B") or {}).get("params") or pkg_b.get("params", {})
+
+        meeting_record = {
+            "meeting_id": meeting_id,
+            "held_at": now_str,
+            "trigger_source": "ANTIGRAVITY_GEMINI_4_NEON_SUBAGENTS",
+            "status": "PENDING_OWNER_APPROVAL",
+            "approved_choice": None,
+            "approved_at": None,
+            "ai_quota_status": {
+                "date": now_dt.strftime("%Y-%m-%d"),
+                "pro_quota_health_pct": 100.0,
+                "recommended_tier": "ANTIGRAVITY_GEMINI_4_NEON",
+                "recommended_tier_label": "Tier 0: Antigravity Gemini 4 Neon (6-Role Subagent Direct Debate)",
+                "last_model_used": "Gemini 4 Neon (Subagents: Alpha/Funda/Macro + RedTeam/Exec + CIO)",
+            },
+            "models_used": neon_payload.get("models_used") or [
+                "🎯開拓＆📰ファンダ＆🌍マクロ官: Antigravity Gemini 4 Neon (Subagent #1)",
+                "🛡️RedTeam監査＆⚡執行官: Antigravity Gemini 4 Neon (Subagent #2)",
+                "⚖️CIO議長: Antigravity Gemini 4 Neon (Lead Agent)",
+            ],
+            "core_agenda_ja": neon_payload.get("core_agenda_ja", ""),
+            "cio_verdict_ja": neon_payload.get("cio_verdict_ja", ""),
+            "recommended_choice": neon_payload.get("recommended_choice", "C"),
+            "fundamental_report": neon_payload.get("fundamental_report", {}),
+            "news_headlines": neon_payload.get("news_headlines", []),
+            "agent_debate": neon_payload.get("agent_debate", {}),
+            "last_week_experiment_result": evidence.get("last_week_experiment_result", {}),
+            "next_week_experiment": roadmap_mem["active_weekly_experiment"],
+            "mid_long_term_roadmap": roadmap_mem["mid_long_term_roadmap"],
+            "options": {
+                "A": {
+                    "label": (custom_opts.get("A") or {}).get("label") or "🔥 選択肢A：【攻め】アルファ開拓＆マクロ金利順張り特化パッケージ",
+                    "summary_ja": (custom_opts.get("A") or {}).get("summary_ja") or "",
+                    "params": opt_a_params,
+                    "stance": "AGGRESSIVE",
+                    "backtest_21d": bt_a.get("simulated") or bt_a,
+                },
+                "B": {
+                    "label": (custom_opts.get("B") or {}).get("label") or "🛡️ 選択肢B：【守り】狭小SL即死＆微益撤退撲滅・堅牢パッケージ",
+                    "summary_ja": (custom_opts.get("B") or {}).get("summary_ja") or "",
+                    "params": opt_b_params,
+                    "stance": "BALANCED",
+                    "backtest_21d": bt_b.get("simulated") or bt_b,
+                },
+                "C": {
+                    "label": (custom_opts.get("C") or {}).get("label") or "🧪 選択肢C：【ハイブリッド（★Gemini 4 Neon 議長推奨）】本番は🛡️選択肢B（+14.0万円改善）を即時適用 ＋ 裏シャドー枠で🔥選択肢A＆次週テーマを1週間実戦対決",
+                    "summary_ja": (custom_opts.get("C") or {}).get("summary_ja") or "",
+                    "params": opt_b_params,
+                    "shadow_experiment_params": opt_a_params,
+                    "stance": "BALANCED",
+                    "backtest_21d": bt_b.get("simulated") or bt_b,
+                },
+                "REJECT": {
+                    "label": "🔴 却下：今週の提案はすべて見送り（完全現状維持）",
+                    "summary_ja": "現行の動的パラメータと運用スタンスを一切変更せず、そのまま来週も継続する。",
+                    "params": cur_p,
+                    "stance": "KEEP",
+                },
+            },
+            "decision_urls": decision_urls,
+        }
+
+        self._save_meeting(meeting_record)
+        if self.discord_mgr and hasattr(self.discord_mgr, "send_sunday_ic_report"):
+            self.discord_mgr.send_sunday_ic_report(meeting_record)
+
+        print(f"🏛️✨ [ANTIGRAVITY GEMINI 4 NEON IC PUBLISHED] Neon 6役会議結果を保存＆Discordへ配信しました (id={meeting_id})")
         return meeting_record
 
     def load_latest_meeting(self) -> Dict[str, Any]:
