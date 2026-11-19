@@ -10,10 +10,10 @@
     "tp": 4061.77,
     "setup_name": "SMC_London_Fractal_High_Sweep",
     "rationale": "[London] フラクタル高値 ($4072.74) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 52.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4061.77,
+    "profit": 15559.0,
+    "close_time": "2026-11-08 23:42:00"
   },
   {
     "order_id": "2832123502",
@@ -26,10 +26,10 @@
     "tp": 4066.023,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4076.79) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 50.6pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4078.67,
+    "profit": -9981.0,
+    "close_time": "2026-11-09 00:32:20"
   },
   {
     "order_id": "2832356579",
@@ -42,10 +42,10 @@
     "tp": 4093.543,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4103.13) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 47.8pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4100.283,
+    "profit": 204.0,
+    "close_time": "2026-11-09 00:47:00"
   },
   {
     "order_id": "2832449395",
@@ -58,10 +58,10 @@
     "tp": 4092.506,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4103.13) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 53.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4099.875,
+    "profit": -155.0,
+    "close_time": "2026-11-09 00:52:05"
   },
   {
     "order_id": "2832770569",
@@ -74,10 +74,10 @@
     "tp": 4104.55,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4110.48) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 35.5pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4104.55,
+    "profit": 14781.0,
+    "close_time": "2026-11-09 01:15:14"
   },
   {
     "order_id": "2832858388",
@@ -90,10 +90,10 @@
     "tp": 4102.746,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4111.59) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 47.4pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4109.78,
+    "profit": 207.0,
+    "close_time": "2026-11-09 01:22:25"
   },
   {
     "order_id": "2832918512",
@@ -106,10 +106,10 @@
     "tp": 4102.514,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4111.59) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 48.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4109.82,
+    "profit": 198.0,
+    "close_time": "2026-11-09 01:24:38"
   },
   {
     "order_id": "2833050771",
@@ -122,10 +122,10 @@
     "tp": 4101.697,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4112.41) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 54.4pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4109.67,
+    "profit": 168.0,
+    "close_time": "2026-11-09 01:39:08"
   },
   {
     "order_id": "2833099568",
@@ -138,10 +138,10 @@
     "tp": 4103.831,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4111.59) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 44.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4114.828,
+    "profit": -7967.0,
+    "close_time": "2026-11-09 01:40:28"
   },
   {
     "order_id": "2833239509",
@@ -154,10 +154,10 @@
     "tp": 4116.907,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4125.80) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 46.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4124.13,
+    "profit": -108.0,
+    "close_time": "2026-11-09 01:51:28"
   },
   {
     "order_id": "2833330686",
@@ -170,10 +170,10 @@
     "tp": 4116.785,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4127.09) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 51.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4126.19,
+    "profit": 191.0,
+    "close_time": "2026-11-09 02:04:34"
   },
   {
     "order_id": "2833374542",
@@ -186,10 +186,10 @@
     "tp": 4118.38,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4128.42) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 49.8pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4131.495,
+    "profit": -12775.0,
+    "close_time": "2026-11-09 02:06:15"
   },
   {
     "order_id": "2833479591",
@@ -202,10 +202,10 @@
     "tp": 4125.349,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4134.18) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 45.4pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4125.349,
+    "profit": 13429.0,
+    "close_time": "2026-11-09 02:30:18"
   },
   {
     "order_id": "2833937303",
@@ -218,10 +218,10 @@
     "tp": 4116.785,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $4118.31-$4119.19) への戻り目リジェクションを検知。戻り売り。SL: 15.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4120.539,
+    "profit": -8233.0,
+    "close_time": "2026-11-09 03:22:22"
   },
   {
     "order_id": "2834488751",
@@ -234,10 +234,10 @@
     "tp": 4114.427,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $4124.29-$4124.89) への戻り目リジェクションを検知。戻り売り。SL: 46.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4125.952,
+    "profit": -9410.0,
+    "close_time": "2026-11-09 05:19:56"
   },
   {
     "order_id": "2841362732",
@@ -250,10 +250,10 @@
     "tp": 4134.192,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($4127.66) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 30.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4126.657,
+    "profit": -12469.0,
+    "close_time": "2026-11-10 00:31:58"
   },
   {
     "order_id": "2841449431",
@@ -266,10 +266,10 @@
     "tp": 4128.659,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($4121.68) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 32.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4124.51,
+    "profit": 281.0,
+    "close_time": "2026-11-10 00:50:40"
   },
   {
     "order_id": "2841496195",
@@ -282,10 +282,10 @@
     "tp": 4118.353,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $4124.44-$4126.73) への戻り目リジェクションを検知。戻り売り。SL: 38.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4127.856,
+    "profit": -9996.0,
+    "close_time": "2026-11-10 01:00:58"
   },
   {
     "order_id": "2850332164",
@@ -298,10 +298,10 @@
     "tp": 4038.44,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4041.04) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 14.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4042.025,
+    "profit": -12352.0,
+    "close_time": "2026-11-11 00:13:55"
   },
   {
     "order_id": "2850346715",
@@ -314,10 +314,10 @@
     "tp": 4038.237,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4042.00) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 18.9pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4040.98,
+    "profit": 457.0,
+    "close_time": "2026-11-11 00:18:31"
   },
   {
     "order_id": "2850366616",
@@ -330,10 +330,10 @@
     "tp": 4039.124,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4042.01) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 15.4pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4039.124,
+    "profit": 13475.0,
+    "close_time": "2026-11-11 00:23:29"
   },
   {
     "order_id": "2850382697",
@@ -346,10 +346,10 @@
     "tp": 4033.923,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($4042.01) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 36.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4039.37,
+    "profit": 241.0,
+    "close_time": "2026-11-11 00:29:09"
   },
   {
     "order_id": "2850413661",
@@ -362,10 +362,10 @@
     "tp": 4042.963,
     "setup_name": "Trend_NewYork_EMA20_Bounce_BUY",
     "rationale": "[NewYork] M5上昇トレンド推進中（EMA20 > EMA50）。EMA20 ($4036.97) への押し目反発を検知し順張り押し目買い。SL: 39.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4033.212,
+    "profit": -9376.0,
+    "close_time": "2026-11-11 00:51:37"
   },
   {
     "order_id": "2850621232",
@@ -378,10 +378,10 @@
     "tp": 4042.629,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($4030.50) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 53.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 4029.312,
+    "profit": -10258.0,
+    "close_time": "2026-11-11 01:12:27"
   },
   {
     "order_id": "2857450682",
@@ -394,10 +394,10 @@
     "tp": 3968.374,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3977.02-$3978.26) への戻り目リジェクションを検知。戻り売り。SL: 45.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3975.13,
+    "profit": 193.0,
+    "close_time": "2026-11-12 00:16:31"
   },
   {
     "order_id": "2857799546",
@@ -410,10 +410,10 @@
     "tp": 3993.365,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($3997.39) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 23.4pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3999.216,
+    "profit": -7058.0,
+    "close_time": "2026-11-12 01:05:32"
   },
   {
     "order_id": "2857864527",
@@ -426,10 +426,10 @@
     "tp": 3988.789,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($3999.89) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 52.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3996.61,
+    "profit": 172.0,
+    "close_time": "2026-11-12 01:22:04"
   },
   {
     "order_id": "2858164931",
@@ -442,10 +442,10 @@
     "tp": 3974.228,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3983.17-$3985.99) への戻り目リジェクションを検知。戻り売り。SL: 53.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3987.525,
+    "profit": -8280.0,
+    "close_time": "2026-11-12 02:09:20"
   },
   {
     "order_id": "2858472201",
@@ -458,10 +458,10 @@
     "tp": 3980.371,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3978.00) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 20.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3975.336,
+    "profit": -9464.0,
+    "close_time": "2026-11-12 02:41:44"
   },
   {
     "order_id": "2867672483",
@@ -474,10 +474,10 @@
     "tp": 3919.81,
     "setup_name": "ICT_NewYork_Bullish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3907.75-$3909.75) へのプルバック反発を検知。押し目買い。SL: 54.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3919.81,
+    "profit": 14687.0,
+    "close_time": "2026-11-13 03:00:37"
   },
   {
     "order_id": "2869887043",
@@ -490,10 +490,10 @@
     "tp": 3890.374,
     "setup_name": "Trend_Asia_EMA20_Reject_SELL",
     "rationale": "[Asia] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3898.53) への戻り目リジェクションを検知し順張り戻り売り。SL: 52.7pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3898.0,
+    "profit": 173.0,
+    "close_time": "2026-11-13 08:14:28"
   },
   {
     "order_id": "2869974464",
@@ -506,10 +506,10 @@
     "tp": 3890.411,
     "setup_name": "Trend_Asia_EMA20_Reject_SELL",
     "rationale": "[Asia] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3898.06) への戻り目リジェクションを検知し順張り戻り売り。SL: 47.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3890.411,
+    "profit": 16914.0,
+    "close_time": "2026-11-13 08:33:56"
   },
   {
     "order_id": "2870128496",
@@ -522,10 +522,10 @@
     "tp": 3887.407,
     "setup_name": "Trend_Asia_EMA20_Reject_SELL",
     "rationale": "[Asia] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3896.40) への戻り目リジェクションを検知し順張り戻り売り。SL: 54.7pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3895.53,
+    "profit": 168.0,
+    "close_time": "2026-11-13 08:48:45"
   },
   {
     "order_id": "2870175748",
@@ -538,10 +538,10 @@
     "tp": 3888.037,
     "setup_name": "Trend_Asia_EMA20_Reject_SELL",
     "rationale": "[Asia] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3896.01) への戻り目リジェクションを検知し順張り戻り売り。SL: 50.6pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3900.687,
+    "profit": -9850.0,
+    "close_time": "2026-11-13 09:04:50"
   },
   {
     "order_id": "2870271583",
@@ -554,10 +554,10 @@
     "tp": 3907.187,
     "setup_name": "ICT_Asia_Bullish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3895.82-$3896.14) へのプルバック反発を検知。押し目買い。SL: 50.6pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3894.537,
+    "profit": -10031.0,
+    "close_time": "2026-11-13 09:26:36"
   },
   {
     "order_id": "2870583645",
@@ -570,10 +570,10 @@
     "tp": 3892.817,
     "setup_name": "SMC_Asia_Fractal_High_Sweep",
     "rationale": "[Asia] フラクタル高値 ($3905.26) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 54.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3892.817,
+    "profit": 14411.0,
+    "close_time": "2026-11-13 10:43:52"
   },
   {
     "order_id": "2870739986",
@@ -586,10 +586,10 @@
     "tp": 3887.75,
     "setup_name": "ICT_Asia_Bearish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3895.88-$3896.85) への戻り目リジェクションを検知。戻り売り。SL: 40.5pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3887.75,
+    "profit": 14652.0,
+    "close_time": "2026-11-13 11:27:34"
   },
   {
     "order_id": "2870917303",
@@ -602,10 +602,10 @@
     "tp": 3883.534,
     "setup_name": "ICT_Asia_Bearish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3890.75-$3891.12) への戻り目リジェクションを検知。戻り売り。SL: 33.8pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3888.45,
+    "profit": 289.0,
+    "close_time": "2026-11-13 11:36:08"
   },
   {
     "order_id": "2870958189",
@@ -618,10 +618,10 @@
     "tp": 3897.609,
     "setup_name": "SMC_Asia_Fractal_Low_Sweep",
     "rationale": "[Asia] フラクタル安値 ($3886.31) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 48.8pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3890.13,
+    "profit": 206.0,
+    "close_time": "2026-11-13 12:36:33"
   },
   {
     "order_id": "2871308704",
@@ -634,10 +634,10 @@
     "tp": 3896.268,
     "setup_name": "SMC_Asia_Fractal_Low_Sweep",
     "rationale": "[Asia] フラクタル安値 ($3885.56) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 47.4pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3889.38,
+    "profit": 208.0,
+    "close_time": "2026-11-13 13:02:27"
   },
   {
     "order_id": "2871912147",
@@ -650,10 +650,10 @@
     "tp": 3896.401,
     "setup_name": "ICT_Asia_Bullish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3884.79-$3890.89) へのプルバック反発を検知。押し目買い。SL: 55.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3888.23,
+    "profit": 182.0,
+    "close_time": "2026-11-13 13:46:03"
   },
   {
     "order_id": "2871933101",
@@ -666,10 +666,10 @@
     "tp": 3894.978,
     "setup_name": "ICT_Asia_Bullish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3884.79-$3890.89) へのプルバック反発を検知。押し目買い。SL: 49.4pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3883.5,
+    "profit": -7545.0,
+    "close_time": "2026-11-13 13:46:52"
   },
   {
     "order_id": "2872101410",
@@ -682,10 +682,10 @@
     "tp": 3887.86,
     "setup_name": "ICT_Asia_Bullish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3884.79-$3890.89) へのプルバック反発を検知。押し目買い。SL: 22.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3882.305,
+    "profit": -7825.0,
+    "close_time": "2026-11-13 13:56:45"
   },
   {
     "order_id": "2872175434",
@@ -698,10 +698,10 @@
     "tp": 3876.578,
     "setup_name": "ICT_Asia_Bearish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3885.96-$3887.20) への戻り目リジェクションを検知。戻り売り。SL: 52.9pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3884.97,
+    "profit": 184.0,
+    "close_time": "2026-11-13 14:13:21"
   },
   {
     "order_id": "2872265896",
@@ -714,10 +714,10 @@
     "tp": 3877.205,
     "setup_name": "ICT_Asia_Bearish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3885.96-$3887.20) への戻り目リジェクションを検知。戻り売り。SL: 50.9pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3884.54,
+    "profit": 194.0,
+    "close_time": "2026-11-13 14:23:39"
   },
   {
     "order_id": "2873109843",
@@ -730,10 +730,10 @@
     "tp": 3869.902,
     "setup_name": "ICT_London_Pre_Bearish_FVG_Retest",
     "rationale": "[London_Pre] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3879.49-$3880.28) への戻り目リジェクションを検知。戻り売り。SL: 49.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3877.25,
+    "profit": 185.0,
+    "close_time": "2026-11-13 15:40:16"
   },
   {
     "order_id": "2873168271",
@@ -746,10 +746,10 @@
     "tp": 3883.844,
     "setup_name": "SMC_London_Pre_Fractal_Low_Sweep",
     "rationale": "[London_Pre] フラクタル安値 ($3872.56) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 54.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3875.69,
+    "profit": 177.0,
+    "close_time": "2026-11-13 15:44:21"
   },
   {
     "order_id": "2873325483",
@@ -762,10 +762,10 @@
     "tp": 3878.593,
     "setup_name": "SMC_London_Fractal_Low_Sweep",
     "rationale": "[London] フラクタル安値 ($3872.29) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 34.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3870.022,
+    "profit": -8889.0,
+    "close_time": "2026-11-13 16:01:09"
   },
   {
     "order_id": "2873475168",
@@ -778,10 +778,10 @@
     "tp": 3886.391,
     "setup_name": "ICT_London_Bullish_FVG_Retest",
     "rationale": "[London] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3874.25-$3876.84) へのプルバック反発を検知。押し目買い。SL: 54.8pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3881.422,
+    "profit": 5636.0,
+    "close_time": "2026-11-13 16:27:41"
   },
   {
     "order_id": "2873657376",
@@ -794,10 +794,10 @@
     "tp": 3871.608,
     "setup_name": "ICT_London_Bearish_FVG_Retest",
     "rationale": "[London] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3881.07-$3882.59) への戻り目リジェクションを検知。戻り売り。SL: 49.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3878.72,
+    "profit": 185.0,
+    "close_time": "2026-11-13 17:04:39"
   },
   {
     "order_id": "2873698344",
@@ -810,10 +810,10 @@
     "tp": 3871.811,
     "setup_name": "Trend_London_EMA20_Reject_SELL",
     "rationale": "[London] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3881.00) への戻り目リジェクションを検知し順張り戻り売り。SL: 54.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3885.366,
+    "profit": -9085.0,
+    "close_time": "2026-11-13 17:07:45"
   },
   {
     "order_id": "2873744504",
@@ -826,10 +826,10 @@
     "tp": 3891.308,
     "setup_name": "ICT_London_Bullish_FVG_Retest",
     "rationale": "[London] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3879.89-$3883.21) へのプルバック反発を検知。押し目買い。SL: 50.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3884.02,
+    "profit": 186.0,
+    "close_time": "2026-11-13 18:00:12"
   },
   {
     "order_id": "2873924101",
@@ -842,10 +842,10 @@
     "tp": 3888.086,
     "setup_name": "ICT_London_Bullish_FVG_Retest",
     "rationale": "[London] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3882.80-$3885.10) へのプルバック反発を検知。押し目買い。SL: 25.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3884.42,
+    "profit": 386.0,
+    "close_time": "2026-11-13 18:25:23"
   },
   {
     "order_id": "2874121372",
@@ -858,10 +858,10 @@
     "tp": 3883.785,
     "setup_name": "SMC_London_Fractal_Low_Sweep",
     "rationale": "[London] フラクタル安値 ($3877.13) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 30.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3879.39,
+    "profit": 313.0,
+    "close_time": "2026-11-13 19:21:57"
   },
   {
     "order_id": "2874150070",
@@ -874,10 +874,10 @@
     "tp": 3871.176,
     "setup_name": "Trend_London_EMA20_Reject_SELL",
     "rationale": "[London] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3881.38) への戻り目リジェクションを検知し順張り戻り売り。SL: 49.9pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3878.55,
+    "profit": 190.0,
+    "close_time": "2026-11-13 20:29:26"
   },
   {
     "order_id": "2879385917",
@@ -890,10 +890,10 @@
     "tp": 3879.706,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3888.46-$3889.59) への戻り目リジェクションを検知。戻り売り。SL: 45.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3886.6,
+    "profit": 209.0,
+    "close_time": "2026-11-16 00:45:26"
   },
   {
     "order_id": "2879526300",
@@ -906,10 +906,10 @@
     "tp": 3897.709,
     "setup_name": "ICT_NewYork_Bullish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3886.77-$3891.03) へのプルバック反発を検知。押し目買い。SL: 49.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3885.414,
+    "profit": -9038.0,
+    "close_time": "2026-11-16 01:00:08"
   },
   {
     "order_id": "2879987974",
@@ -922,10 +922,10 @@
     "tp": 3876.681,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3872.68) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 51.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3868.31,
+    "profit": -543.0,
+    "close_time": "2026-11-16 01:24:03"
   },
   {
     "order_id": "2880461658",
@@ -938,10 +938,10 @@
     "tp": 3874.167,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3867.79) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 39.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3864.365,
+    "profit": -7853.0,
+    "close_time": "2026-11-16 02:00:34"
   },
   {
     "order_id": "2881533166",
@@ -954,10 +954,10 @@
     "tp": 3865.332,
     "setup_name": "Trend_NewYork_EMA20_Reject_SELL",
     "rationale": "[NewYork] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3873.09) への戻り目リジェクションを検知し順張り戻り売り。SL: 49.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3865.332,
+    "profit": 13275.0,
+    "close_time": "2026-11-16 05:00:45"
   },
   {
     "order_id": "2881794858",
@@ -970,10 +970,10 @@
     "tp": 3859.9,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3869.71-$3870.34) への戻り目リジェクションを検知。戻り売り。SL: 46.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3871.399,
+    "profit": -9382.0,
+    "close_time": "2026-11-16 05:17:35"
   },
   {
     "order_id": "2881886936",
@@ -986,10 +986,10 @@
     "tp": 3866.539,
     "setup_name": "Trend_NewYork_EMA20_Reject_SELL",
     "rationale": "[NewYork] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3871.26) への戻り目リジェクションを検知し順張り戻り売り。SL: 34.8pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3875.236,
+    "profit": -9774.0,
+    "close_time": "2026-11-16 05:21:26"
   },
   {
     "order_id": "2889077968",
@@ -1002,10 +1002,10 @@
     "tp": 3857.158,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($3863.43) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 35.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3857.158,
+    "profit": 13780.0,
+    "close_time": "2026-11-17 00:19:08"
   },
   {
     "order_id": "2889149684",
@@ -1018,10 +1018,10 @@
     "tp": 3860.184,
     "setup_name": "Trend_NewYork_EMA20_Bounce_BUY",
     "rationale": "[NewYork] M5上昇トレンド推進中（EMA20 > EMA50）。EMA20 ($3857.40) への押し目反発を検知し順張り押し目買い。SL: 16.5pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3856.052,
+    "profit": -9208.0,
+    "close_time": "2026-11-17 00:22:47"
   },
   {
     "order_id": "2889266642",
@@ -1034,10 +1034,10 @@
     "tp": 3865.961,
     "setup_name": "Trend_NewYork_EMA20_Bounce_BUY",
     "rationale": "[NewYork] M5上昇トレンド推進中（EMA20 > EMA50）。EMA20 ($3857.26) への押し目反発を検知し順張り押し目買い。SL: 44.5pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3859.4,
+    "profit": 215.0,
+    "close_time": "2026-11-17 00:46:08"
   },
   {
     "order_id": "2889302432",
@@ -1050,10 +1050,10 @@
     "tp": 3865.241,
     "setup_name": "Trend_NewYork_EMA20_Bounce_BUY",
     "rationale": "[NewYork] M5上昇トレンド推進中（EMA20 > EMA50）。EMA20 ($3857.66) への押し目反発を検知し順張り押し目買い。SL: 36.9pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3856.019,
+    "profit": -9889.0,
+    "close_time": "2026-11-17 00:51:19"
   },
   {
     "order_id": "2889397008",
@@ -1066,10 +1066,10 @@
     "tp": 3859.367,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3851.89) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 35.5pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3856.28,
+    "profit": 258.0,
+    "close_time": "2026-11-17 01:01:17"
   },
   {
     "order_id": "2889485208",
@@ -1082,10 +1082,10 @@
     "tp": 3857.118,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3848.80) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 39.4pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3847.264,
+    "profit": -8877.0,
+    "close_time": "2026-11-17 01:05:57"
   },
   {
     "order_id": "2889575233",
@@ -1098,10 +1098,10 @@
     "tp": 3846.382,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3854.61-$3857.72) への戻り目リジェクションを検知。戻り売り。SL: 51.5pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3846.382,
+    "profit": 13193.0,
+    "close_time": "2026-11-17 01:19:31"
   },
   {
     "order_id": "2889662827",
@@ -1114,10 +1114,10 @@
     "tp": 3851.597,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3845.41) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 32.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3843.568,
+    "profit": -9868.0,
+    "close_time": "2026-11-17 01:26:05"
   },
   {
     "order_id": "2889716912",
@@ -1130,10 +1130,10 @@
     "tp": 3850.396,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3845.41) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 33.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3850.396,
+    "profit": 12220.0,
+    "close_time": "2026-11-17 01:27:12"
   },
   {
     "order_id": "2889761555",
@@ -1146,10 +1146,10 @@
     "tp": 3846.461,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3848.05-$3851.48) への戻り目リジェクションを検知。戻り売り。SL: 27.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3846.461,
+    "profit": 12476.0,
+    "close_time": "2026-11-17 01:30:31"
   },
   {
     "order_id": "2889814724",
@@ -1162,10 +1162,10 @@
     "tp": 3844.522,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3848.05-$3851.48) への戻り目リジェクションを検知。戻り売り。SL: 34.6pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3853.172,
+    "profit": -8526.0,
+    "close_time": "2026-11-17 01:35:10"
   },
   {
     "order_id": "2889956091",
@@ -1178,10 +1178,10 @@
     "tp": 3862.678,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($3872.70) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 49.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3862.678,
+    "profit": 13937.0,
+    "close_time": "2026-11-17 01:53:49"
   },
   {
     "order_id": "2890245285",
@@ -1194,10 +1194,10 @@
     "tp": 3864.813,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($3873.05) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 41.7pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3864.813,
+    "profit": 11938.0,
+    "close_time": "2026-11-17 02:29:13"
   },
   {
     "order_id": "2890438518",
@@ -1210,10 +1210,10 @@
     "tp": 3871.43,
     "setup_name": "Trend_NewYork_EMA20_Bounce_BUY",
     "rationale": "[NewYork] M5上昇トレンド推進中（EMA20 > EMA50）。EMA20 ($3862.88) への押し目反発を検知し順張り押し目買い。SL: 54.7pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3863.21,
+    "profit": 182.0,
+    "close_time": "2026-11-17 02:50:17"
   },
   {
     "order_id": "2890490010",
@@ -1226,10 +1226,10 @@
     "tp": 3869.379,
     "setup_name": "Trend_NewYork_EMA20_Bounce_BUY",
     "rationale": "[NewYork] M5上昇トレンド推進中（EMA20 > EMA50）。EMA20 ($3863.02) への押し目反発を検知し順張り押し目買い。SL: 44.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3862.89,
+    "profit": 212.0,
+    "close_time": "2026-11-17 02:54:26"
   },
   {
     "order_id": "2891280204",
@@ -1242,10 +1242,10 @@
     "tp": 3877.495,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($3883.04) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 26.5pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3884.12,
+    "profit": -7204.0,
+    "close_time": "2026-11-17 05:30:00"
   },
   {
     "order_id": "2891419964",
@@ -1258,10 +1258,10 @@
     "tp": 3884.192,
     "setup_name": "ICT_NewYork_Bullish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3878.43-$3881.47) へのプルバック反発を検知。押し目買い。SL: 27.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3884.192,
+    "profit": 12676.0,
+    "close_time": "2026-11-17 05:46:49"
   },
   {
     "order_id": "2892058351",
@@ -1274,10 +1274,10 @@
     "tp": 3865.767,
     "setup_name": "ICT_Asia_Bearish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3872.67-$3873.21) への戻り目リジェクションを検知。戻り売り。SL: 33.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3865.767,
+    "profit": 15904.0,
+    "close_time": "2026-11-17 08:05:14"
   },
   {
     "order_id": "2892127592",
@@ -1290,10 +1290,10 @@
     "tp": 3859.579,
     "setup_name": "ICT_Asia_Bearish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3868.38-$3870.79) への戻り目リジェクションを検知。戻り売り。SL: 48.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3866.37,
+    "profit": 202.0,
+    "close_time": "2026-11-17 08:13:05"
   },
   {
     "order_id": "2892260187",
@@ -1306,10 +1306,10 @@
     "tp": 3874.115,
     "setup_name": "ICT_Asia_Bullish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3865.39-$3865.99) へのプルバック反発を検知。押し目買い。SL: 38.6pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3868.43,
+    "profit": 264.0,
+    "close_time": "2026-11-17 09:04:40"
   },
   {
     "order_id": "2892581111",
@@ -1322,10 +1322,10 @@
     "tp": 3868.839,
     "setup_name": "SMC_Asia_Fractal_Low_Sweep",
     "rationale": "[Asia] フラクタル安値 ($3859.77) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 40.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3863.39,
+    "profit": 262.0,
+    "close_time": "2026-11-17 10:01:00"
   },
   {
     "order_id": "2892857603",
@@ -1338,10 +1338,10 @@
     "tp": 3863.425,
     "setup_name": "SMC_Asia_Fractal_Low_Sweep",
     "rationale": "[Asia] フラクタル安値 ($3853.12) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 45.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3856.83,
+    "profit": 227.0,
+    "close_time": "2026-11-17 10:46:46"
   },
   {
     "order_id": "2893284186",
@@ -1354,10 +1354,10 @@
     "tp": 3859.928,
     "setup_name": "SMC_Asia_Fractal_High_Sweep",
     "rationale": "[Asia] フラクタル高値 ($3868.01) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 48.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3859.928,
+    "profit": 14948.0,
+    "close_time": "2026-11-17 12:30:01"
   },
   {
     "order_id": "2893451181",
@@ -1370,10 +1370,10 @@
     "tp": 3852.519,
     "setup_name": "Trend_Asia_EMA20_Reject_SELL",
     "rationale": "[Asia] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3862.82) への戻り目リジェクションを検知し順張り戻り売り。SL: 48.7pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3859.39,
+    "profit": 218.0,
+    "close_time": "2026-11-17 12:41:10"
   },
   {
     "order_id": "2893612408",
@@ -1386,10 +1386,10 @@
     "tp": 3855.288,
     "setup_name": "ICT_Asia_Bearish_FVG_Retest",
     "rationale": "[Asia] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3857.78-$3860.02) への戻り目リジェクションを検知。戻り売り。SL: 23.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3861.087,
+    "profit": -9920.0,
+    "close_time": "2026-11-17 12:59:00"
   },
   {
     "order_id": "2893720551",
@@ -1402,10 +1402,10 @@
     "tp": 3853.777,
     "setup_name": "Trend_Asia_EMA20_Reject_SELL",
     "rationale": "[Asia] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3861.11) への戻り目リジェクションを検知し順張り戻り売り。SL: 43.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3857.407,
+    "profit": 6738.0,
+    "close_time": "2026-11-17 13:11:29"
   },
   {
     "order_id": "2893765089",
@@ -1418,10 +1418,10 @@
     "tp": 3851.069,
     "setup_name": "Trend_Asia_EMA20_Reject_SELL",
     "rationale": "[Asia] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3860.77) への戻り目リジェクションを検知し順張り戻り売り。SL: 50.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3858.63,
+    "profit": 207.0,
+    "close_time": "2026-11-17 13:28:34"
   },
   {
     "order_id": "2895047008",
@@ -1434,10 +1434,10 @@
     "tp": 3848.999,
     "setup_name": "Trend_London_Pre_EMA20_Reject_SELL",
     "rationale": "[London_Pre] M5下降トレンド推進中（EMA20 < EMA50）。EMA20 ($3859.57) への戻り目リジェクションを検知し順張り戻り売り。SL: 51.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3861.749,
+    "profit": -11121.0,
+    "close_time": "2026-11-17 15:22:05"
   },
   {
     "order_id": "2895255004",
@@ -1450,10 +1450,10 @@
     "tp": 3873.633,
     "setup_name": "SMC_London_Pre_Fractal_High_Sweep",
     "rationale": "[London_Pre] フラクタル高値 ($3873.51) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 14.5pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3878.815,
+    "profit": -25199.0,
+    "close_time": "2026-11-17 15:35:37"
   },
   {
     "order_id": "2896221965",
@@ -1466,10 +1466,10 @@
     "tp": 3877.376,
     "setup_name": "ICT_London_Bullish_FVG_Retest",
     "rationale": "[London] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3866.36-$3867.46) へのプルバック反発を検知。押し目買い。SL: 49.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3865.08,
+    "profit": -9174.0,
+    "close_time": "2026-11-17 17:32:59"
   },
   {
     "order_id": "2896714103",
@@ -1482,10 +1482,10 @@
     "tp": 3860.402,
     "setup_name": "SMC_London_Fractal_Low_Sweep",
     "rationale": "[London] フラクタル安値 ($3852.76) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 33.9pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3851.928,
+    "profit": -10333.0,
+    "close_time": "2026-11-17 19:25:36"
   },
   {
     "order_id": "2897206702",
@@ -1498,10 +1498,10 @@
     "tp": 3843.849,
     "setup_name": "ICT_London_Bearish_FVG_Retest",
     "rationale": "[London] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3848.66-$3849.74) への戻り目リジェクションを検知。戻り売り。SL: 27.8pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3850.8,
+    "profit": -10414.0,
+    "close_time": "2026-11-17 21:03:41"
   },
   {
     "order_id": "2897250314",
@@ -1514,10 +1514,10 @@
     "tp": 3845.791,
     "setup_name": "ICT_London_Bearish_FVG_Retest",
     "rationale": "[London] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3848.66-$3849.74) への戻り目リジェクションを検知。戻り売り。SL: 20.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3850.84,
+    "profit": -12297.0,
+    "close_time": "2026-11-17 21:10:33"
   },
   {
     "order_id": "2897267609",
@@ -1530,10 +1530,10 @@
     "tp": 3847.655,
     "setup_name": "ICT_London_Bearish_FVG_Retest",
     "rationale": "[London] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3848.66-$3849.74) への戻り目リジェクションを検知。戻り売り。SL: 12.5pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3850.78,
+    "profit": -8935.0,
+    "close_time": "2026-11-17 21:16:27"
   },
   {
     "order_id": "2898262659",
@@ -1546,10 +1546,10 @@
     "tp": 3836.611,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3828.68) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 38.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3827.11,
+    "profit": -8741.0,
+    "close_time": "2026-11-18 00:31:12"
   },
   {
     "order_id": "2898366113",
@@ -1562,10 +1562,10 @@
     "tp": 3828.283,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3818.68) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 46.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3828.283,
+    "profit": 12612.0,
+    "close_time": "2026-11-18 00:39:21"
   },
   {
     "order_id": "2898429998",
@@ -1578,10 +1578,10 @@
     "tp": 3828.888,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3818.68) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 49.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3816.623,
+    "profit": -8583.0,
+    "close_time": "2026-11-18 00:45:15"
   },
   {
     "order_id": "2898501760",
@@ -1594,10 +1594,10 @@
     "tp": 3826.484,
     "setup_name": "SMC_NewYork_Fractal_Low_Sweep",
     "rationale": "[NewYork] フラクタル安値 ($3816.17) のストップ狩り（下ヒゲ/2本合成反発）を検知。個人売りトラップからの急反発狙い。SL: 50.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3813.95,
+    "profit": -9044.0,
+    "close_time": "2026-11-18 01:00:18"
   },
   {
     "order_id": "2898789284",
@@ -1610,10 +1610,10 @@
     "tp": 3827.161,
     "setup_name": "ICT_NewYork_Bullish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3817.82-$3818.47) へのプルバック反発を検知。押し目買い。SL: 47.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3819.71,
+    "profit": 185.0,
+    "close_time": "2026-11-18 01:11:30"
   },
   {
     "order_id": "2898896033",
@@ -1626,10 +1626,10 @@
     "tp": 3828.825,
     "setup_name": "ICT_NewYork_Bullish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3817.82-$3818.47) へのプルバック反発を検知。押し目買い。SL: 54.0pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3815.32,
+    "profit": -8534.0,
+    "close_time": "2026-11-18 01:27:00"
   },
   {
     "order_id": "2909522935",
@@ -1642,10 +1642,10 @@
     "tp": 3733.915,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($3742.19) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 40.2pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3740.13,
+    "profit": 212.0,
+    "close_time": "2026-11-19 00:17:45"
   },
   {
     "order_id": "2909627715",
@@ -1658,10 +1658,10 @@
     "tp": 3736.238,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($3742.95) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 32.4pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3744.338,
+    "profit": -9155.0,
+    "close_time": "2026-11-19 00:24:30"
   },
   {
     "order_id": "2909688936",
@@ -1674,10 +1674,10 @@
     "tp": 3734.736,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($3745.61) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 49.1pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3747.002,
+    "profit": -7065.0,
+    "close_time": "2026-11-19 00:32:45"
   },
   {
     "order_id": "2909737266",
@@ -1690,10 +1690,10 @@
     "tp": 3738.869,
     "setup_name": "SMC_NewYork_Fractal_High_Sweep",
     "rationale": "[NewYork] フラクタル高値 ($3749.03) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 46.3pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3750.435,
+    "profit": -8527.0,
+    "close_time": "2026-11-19 00:37:08"
   },
   {
     "order_id": "2910654391",
@@ -1706,9 +1706,25 @@
     "tp": 3741.568,
     "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
     "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3748.34-$3751.05) への戻り目リジェクションを検知。戻り売り。SL: 44.5pips, RR 1:1.5",
-    "status": "OPEN",
-    "close_price": null,
-    "profit": null,
-    "close_time": null
+    "status": "CLOSED",
+    "close_price": 3741.568,
+    "profit": 11531.0,
+    "close_time": "2026-11-19 02:31:11"
+  },
+  {
+    "order_id": "2911945278",
+    "time": "2026-11-19 04:56:56",
+    "symbol": "XAUUSD",
+    "action": "SELL",
+    "volume": 0.07,
+    "price": 3722.631,
+    "sl": 3730.17,
+    "tp": 3711.24,
+    "setup_name": "SMC_NewYork_Fractal_High_Sweep",
+    "rationale": "[NewYork] フラクタル高値 ($3728.78) のストップ狩り（上ヒゲ/2本合成反落）を検知。個人買いトラップからの急反落狙い。SL: 75.7pips, RR 1:1.5",
+    "status": "CLOSED",
+    "close_price": 3730.17,
+    "profit": -8422.0,
+    "close_time": "2026-11-19 05:06:39"
   }
 ]
