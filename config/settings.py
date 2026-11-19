@@ -14,8 +14,12 @@ GCP_REGION = os.getenv("GCP_REGION", "asia-northeast1")
 GCP_VERTEX_LOCATION = os.getenv("GCP_VERTEX_LOCATION", "us-central1")
 VERTEX_MODEL_NAME = os.getenv("VERTEX_MODEL_NAME", "gemini-2.5-flash")
 
-# FRED API Key (米連邦準備銀行)
+# FRED API Key (米連邦準備銀行・予備)
 FRED_API_KEY = os.getenv("FRED_API_KEY", "509548acea13a9fa6cc1d6ae7e50f117")
+
+# TradingView Webhook 受信設定（Step 2: 主系リアルタイム先行指標）
+TV_WEBHOOK_TOKEN = os.getenv("TV_WEBHOOK_TOKEN", "")
+TV_WEBHOOK_PORT = int(os.getenv("TV_WEBHOOK_PORT", "8000"))
 
 # Discord Webhook & Bot Token
 DISCORD_WEBHOOK_URL = os.getenv(

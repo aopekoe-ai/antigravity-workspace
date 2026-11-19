@@ -32,5 +32,30 @@
     "cache_ttl_minutes": 20,
     "news_buffer_minutes_before": 15,
     "news_buffer_minutes_after": 20
+  },
+  "macro_engine": {
+    "enabled": true,
+    "webhook_port": 8000,
+    "tv_signal_ttl_seconds": 300,
+    "tv_heartbeat_ttl_seconds": 900,
+    "momentum_z_threshold": 1.5,
+    "momentum_cooldown_min_sec": 45,
+    "momentum_cooldown_max_sec": 240,
+    "max_chase_atr_mult": 1.5,
+    "smt_lookback_m1": 35,
+    "hard_guard_threshold": 0.70,
+    "soft_guard_threshold": 0.35,
+    "boost_lot_multiplier": 1.25,
+    "soft_guard_lot_multiplier": 0.75,
+    "macro_sl_atr_multiplier": 1.7,
+    "macro_min_rr": 1.8,
+    "smt_min_rr": 2.0,
+    "mt5_symbols": {
+      "dxy": "DXY",
+      "yield_proxy": "USDJPY",
+      "oil": "USOIL",
+      "equity": "USTEC",
+      "aud": "AUDUSD"
+    }
   }
 }

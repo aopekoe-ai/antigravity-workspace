@@ -25,3 +25,5 @@ test_symbols_rates.py
 verify_true_macro_2026.py
 patch_*.py
 setup_push.sh
+check_symbols.py
+logs/tv_signals.json

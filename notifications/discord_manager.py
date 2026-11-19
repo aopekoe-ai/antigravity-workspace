@@ -18,24 +18,35 @@ class DiscordManager:
         action = trade_info.get("action", "BUY")
         color = 0x26a69a if action == "BUY" else 0xef5350
 
+        engine_labels = {
+            "MACRO_MOMENTUM": "🚀 型A: マクロモメンタム (FVG不要)",
+            "SMT_DIVERGENCE": "🎯 型B: SMTダイバージェンス (FVG不要)",
+            "SMC": "🏛️ 系統3: SMCテクニカル",
+        }
+        entry_engine = signal_info.get("entry_engine", "SMC")
+        macro_source = signal_info.get("macro_source", "NONE")
+        lot_mult = signal_info.get("lot_multiplier", 1.0)
+        engine_label = engine_labels.get(entry_engine, entry_engine)
+
         macro_note = signal_info.get("macro_reason")
         fields = [
-            {"name": "売買種別", "value": f"**{action}** ({trade_info.get('volume')} Lot)", "inline": True},
+            {"name": "売買種別", "value": f"**{action}** ({trade_info.get('volume')} Lot / 倍率 {lot_mult:.2f}x)", "inline": True},
             {"name": "約定価格", "value": f"`${trade_info.get('price'):.2f}`", "inline": True},
+            {"name": "発動エンジン", "value": f"{engine_label} (`{macro_source}`)", "inline": True},
             {"name": "ハードSL (動的ATR)", "value": f"`${trade_info.get('sl'):.2f}` ({signal_info.get('sl_distance_pips')} pips)", "inline": True},
             {"name": "利確ターゲット (TP)", "value": f"`${trade_info.get('tp'):.2f}` ({signal_info.get('tp_distance_pips')} pips)", "inline": True},
             {"name": "リスクリワード比", "value": f"**1 : {signal_info.get('risk_reward_ratio')}**", "inline": True},
-            {"name": "セットアップ根拠 (SMC流動性解説)", "value": f"> {signal_info.get('rationale_ja')}", "inline": False},
+            {"name": "セットアップ根拠", "value": f"> {signal_info.get('rationale_ja')}", "inline": False},
         ]
         if macro_note:
             fields.append({"name": "🤖 Gemini 2.5 Flash マクロ安全判定", "value": f"> {macro_note}", "inline": False})
-        fields.append({"name": "🛡️ 安全担保", "value": "✅ ブローカー側ハードSL即時付与済み\n✅ 単一ポジション限定インターロック有効", "inline": False})
+        fields.append({"name": "🛡️ 安全担保", "value": "✅ ブローカー側ハードSL即時付与済み\n✅ 単一ポジション限定インターロック有効\n✅ 建値移動＋マクロ反転トレーリング監視中", "inline": False})
 
         embed = {
             "title": f"⚡ 【実約定完了】 {trade_info.get('symbol')} {action} #{trade_info.get('order_id')}",
             "color": color,
             "fields": fields,
-            "footer": {"text": f"SMC Institutional Execution Engine • {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"}
+            "footer": {"text": f"SMC + Macro Hybrid Execution Engine v9.0 • {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"}
         }
         self._post_webhook([embed])
 
@@ -56,8 +67,8 @@ class DiscordManager:
         asia_high = market_data.get("asia_high")
         asia_low = market_data.get("asia_low")
         symbol = market_data.get("symbol", "XAUUSD")
+        macro_state = market_data.get("macro_state") or {}
 
-        # 合議体データがある場合
         if committee_report:
             action = committee_report.action
             direction = committee_report.direction
@@ -102,6 +113,16 @@ class DiscordManager:
             {"name": "💼 CFO資金管理", "value": f"承認: `{'✅ 承認' if cfo_approved else '⛔ 見送り'}` (Lot: `{cfo_lot}`)", "inline": True},
         ]
 
+        if macro_state and macro_state.get("source", "NONE") != "NONE":
+            fields.append({
+                "name": "📡 先行指標ハイブリッド状態",
+                "value": (
+                    f"Source: `{macro_state.get('source')}` | Bias: `{macro_state.get('macro_bias_score', 0):+.2f}` | "
+                    f"DXY Z: `{macro_state.get('dxy_z', 0):+.2f}` | Yield Z: `{macro_state.get('yield_z', 0):+.2f}`"
+                ),
+                "inline": False
+            })
+
         if asia_high is not None and asia_low is not None:
             fields.append({
                 "name": "📊 SMC水準 (ATR/高安)",
@@ -123,7 +144,7 @@ class DiscordManager:
             "title": f"🤖 XAU/USD AI合議体 定時分析レポート ({symbol})",
             "color": color,
             "fields": fields,
-            "footer": {"text": f"Multi-Agent AI Hedge Fund Platform v8.1 • {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"}
+            "footer": {"text": f"Multi-Agent AI Hedge Fund Platform v9.0 • {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"}
         }
         self._post_webhook([embed])
 

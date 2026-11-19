@@ -57,20 +57,25 @@ class InstitutionalRiskManager:
             return False
         return len(positions) > 0
 
-    def calculate_position_size(self, sl_distance_pips: float, pip_size: float = 0.10) -> float:
+    def calculate_position_size(
+        self,
+        sl_distance_pips: float,
+        pip_size: float = 0.10,
+        lot_multiplier: float = 1.0,
+    ) -> float:
         """
         【数学的正当性】ボラティリティ動的損切り幅に応じた適正ロットサイズの算出
-        Lot = (口座残高 * リスク%) / (SL_pips * 1pipあたりの価値)
+        Lot = (口座残高 * リスク% * マクロ強弱倍率) / (SL_pips * 1pipあたりの価値)
         """
         acct = self.get_account_state()
         equity = acct["equity"]
         if equity <= 0 or sl_distance_pips <= 0:
             return self.min_lot
 
-        risk_amount_jpy = equity * (self.risk_per_trade_pct / 100.0)
+        safe_mult = max(0.50, min(1.35, float(lot_multiplier)))
+        risk_amount_jpy = equity * (self.risk_per_trade_pct / 100.0) * safe_mult
 
         # XAUUSD 0.01 lot = 1オンス。1 pip ($0.10) の価格変動は約15円〜16円（為替による）
-        # 安全側に倒して 1 pip (0.01 lot) = 約15 JPY と仮定
         pip_value_per_001_lot = 15.0
         calculated_lot = (risk_amount_jpy / (sl_distance_pips * (pip_value_per_001_lot / 0.01)))
 
@@ -107,34 +112,53 @@ class InstitutionalRiskManager:
 
         if pos_type == 0:  # BUY
             profit_dollars = current_price - open_price
-            new_sl = open_price + be_buffer_dollars
+            new_sl = round(open_price + be_buffer_dollars, 2)
             if profit_dollars >= be_trigger_dollars and (current_sl < open_price or current_sl == 0.0):
                 req = {
                     "action": mt5.TRADE_ACTION_SLTP,
                     "position": ticket,
                     "symbol": symbol,
-                    "sl": round(new_sl, 2),
+                    "sl": new_sl,
                     "tp": float(pos.tp)
                 }
                 res = mt5.order_send(req)
                 if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-                    return f"BUY #{ticket} RR1:1到達による建値移動完了 (SL -> )"
+                    return f"BUY #{ticket} RR1:1到達による建値移動完了 (SL -> ${new_sl:.2f})"
         else:  # SELL
             profit_dollars = open_price - current_price
-            new_sl = open_price - be_buffer_dollars
+            new_sl = round(open_price - be_buffer_dollars, 2)
             if profit_dollars >= be_trigger_dollars and (current_sl > open_price or current_sl == 0.0):
                 req = {
                     "action": mt5.TRADE_ACTION_SLTP,
                     "position": ticket,
                     "symbol": symbol,
-                    "sl": round(new_sl, 2),
+                    "sl": new_sl,
                     "tp": float(pos.tp)
                 }
                 res = mt5.order_send(req)
                 if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-                    return f"SELL #{ticket} RR1:1到達による建値移動完了 (SL -> )"
+                    return f"SELL #{ticket} RR1:1到達による建値移動完了 (SL -> ${new_sl:.2f})"
 
         return None
+
+    def apply_macro_trailing_protection(
+        self,
+        symbol: str,
+        pip_size: float,
+        macro_state: Optional[Dict[str, Any]],
+        atr_m5_dollars: float,
+    ) -> Optional[str]:
+        """
+        【Step 2 プロ仕様】マクロ反転トレーリング防御
+        含み益が十分に乗った状態（M5 ATR 1.1倍以上かつ最低25pips）で、
+        先行指標（DXY ＆ US10Y/USDJPY）の追い風が明確に反転した際、SLをタイトに引き上げて利益を確実に防衛する。
+        """
+        if not macro_state:
+            return None
+
+        positions = mt5.positions_get(symbol=symbol)
+        if not positions or len(positions) == 0:
+            return None
 
         pos = positions[0]
         ticket = pos.ticket
@@ -143,38 +167,41 @@ class InstitutionalRiskManager:
         current_price = float(pos.price_current)
         current_sl = float(pos.sl)
 
-        # 20 pips 相当の価格差
-        be_trigger_dollars = 20.0 * pip_size
-        be_buffer_dollars = 1.0 * pip_size
+        min_profit_dollars = max(25.0 * pip_size, atr_m5_dollars * 1.1)
+        trail_offset = max(8.0 * pip_size, atr_m5_dollars * 0.6)
 
-        if pos_type == 0:  # BUY
+        if pos_type == 0 and macro_state.get("macro_reversed_against_buy"):
             profit_dollars = current_price - open_price
-            new_sl = open_price + be_buffer_dollars
-            # 利益が20pips以上、かつ現在のSLが建値より下にある場合
-            if profit_dollars >= be_trigger_dollars and (current_sl < new_sl or current_sl == 0.0):
-                req = {
-                    "action": mt5.TRADE_ACTION_SLTP,
-                    "position": ticket,
-                    "symbol": symbol,
-                    "sl": round(new_sl, 2),
-                    "tp": float(pos.tp)
-                }
-                res = mt5.order_send(req)
-                if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-                    return f"BUY #{ticket} 建値移動完了 (SL -> ${new_sl:.2f})"
-        else:  # SELL
+            if profit_dollars >= min_profit_dollars:
+                new_sl = round(current_price - trail_offset, 2)
+                # 建値より上かつ既存SLより有利（高い）場合のみ引き上げ
+                if new_sl > open_price + (3.0 * pip_size) and (current_sl == 0.0 or new_sl > current_sl + pip_size):
+                    req = {
+                        "action": mt5.TRADE_ACTION_SLTP,
+                        "position": ticket,
+                        "symbol": symbol,
+                        "sl": new_sl,
+                        "tp": float(pos.tp)
+                    }
+                    res = mt5.order_send(req)
+                    if res and res.retcode == mt5.TRADE_RETCODE_DONE:
+                        return f"BUY #{ticket} マクロ反転検知により利益防衛トレーリング実行 (SL -> ${new_sl:.2f})"
+
+        elif pos_type == 1 and macro_state.get("macro_reversed_against_sell"):
             profit_dollars = open_price - current_price
-            new_sl = open_price - be_buffer_dollars
-            if profit_dollars >= be_trigger_dollars and (current_sl > new_sl or current_sl == 0.0):
-                req = {
-                    "action": mt5.TRADE_ACTION_SLTP,
-                    "position": ticket,
-                    "symbol": symbol,
-                    "sl": round(new_sl, 2),
-                    "tp": float(pos.tp)
-                }
-                res = mt5.order_send(req)
-                if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-                    return f"SELL #{ticket} 建値移動完了 (SL -> ${new_sl:.2f})"
+            if profit_dollars >= min_profit_dollars:
+                new_sl = round(current_price + trail_offset, 2)
+                # 建値より下かつ既存SLより有利（低い）場合のみ引き下げ
+                if new_sl < open_price - (3.0 * pip_size) and (current_sl == 0.0 or new_sl < current_sl - pip_size):
+                    req = {
+                        "action": mt5.TRADE_ACTION_SLTP,
+                        "position": ticket,
+                        "symbol": symbol,
+                        "sl": new_sl,
+                        "tp": float(pos.tp)
+                    }
+                    res = mt5.order_send(req)
+                    if res and res.retcode == mt5.TRADE_RETCODE_DONE:
+                        return f"SELL #{ticket} マクロ反転検知により利益防衛トレーリング実行 (SL -> ${new_sl:.2f})"
 
         return None

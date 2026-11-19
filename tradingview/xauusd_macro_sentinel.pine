@@ -1,0 +1,140 @@
+//@version=5
+indicator("XAUUSD Macro Sentinel v9.0 (DXY + US10Y + SMT)", overlay=true, max_labels_count=100)
+
+// ============================================================================
+// XAU/USD AI Hedge Fund v9.0 - TradingView Premium 主系先行指標インジケーター
+// 【使い方】
+// 1. XAUUSD (例: OANDA:XAUUSD または EXNESS:XAUUSD) の「1分足 (1m)」チャートに適用
+// 2. パラメータの Webhook Token にVPS設定済みのトークンを入力
+// 3. アラート作成:
+//    - 条件: "XAUUSD Macro Sentinel v9.0" -> "alert() 関数呼び出しのみ"
+//    - Webhook URL: http://155.133.7.59/tv-webhook
+//    - ※メッセージ欄は空欄のままでOK（スクリプトからJSONを自動送信します）
+// ============================================================================
+
+// --- 設定パラメータ ---
+webhookToken = input.string("REPLACE_WITH_YOUR_TV_WEBHOOK_TOKEN", "Webhook Token", group="VPS Webhook")
+dxySym       = input.symbol("TVC:DXY", "ドル指数 (DXY)", group="先行指標シンボル")
+us10ySym     = input.symbol("TVC:US10Y", "米10年債利回り (US10Y)", group="先行指標シンボル")
+us02ySym     = input.symbol("TVC:US02Y", "米2年債利回り (US02Y)", group="先行指標シンボル")
+zThresh      = input.float(1.5, "型A: モメンタムZスコア閾値", minval=1.0, maxval=3.5, step=0.1, group="シグナル感度")
+smtLookback  = input.int(35, "型B: SMT監視ウィンドウ(分)", minval=20, maxval=60, group="シグナル感度")
+sendHb       = input.bool(true, "5分ごとのマクロバイアス同期(Heartbeat)を送信", group="VPS Webhook")
+
+// --- ヘルパー関数 ---
+f_tanh(float x) =>
+    float cx = math.max(-5.0, math.min(5.0, nz(x, 0.0)))
+    float e2 = math.exp(2.0 * cx)
+    (e2 - 1.0) / (e2 + 1.0)
+
+f_momentum_z(float src) =>
+    float r1 = src[1] != 0 ? (src - src[1]) / src[1] : 0.0
+    float sigma = math.max(nz(ta.stdev(r1, 30), 1e-5), 1e-5)
+    float r3 = src[3] != 0 ? (src - src[3]) / src[3] : 0.0
+    float r5 = src[5] != 0 ? (src - src[5]) / src[5] : 0.0
+    float z3 = r3 / (sigma * math.sqrt(3.0))
+    float z5 = r5 / (sigma * math.sqrt(5.0))
+    float zRaw = (z3 * z5 >= 0) ? (math.abs(z3) >= math.abs(z5) ? z3 : z5) : (0.5 * (z3 + z5))
+    math.max(-6.0, math.min(6.0, nz(zRaw, 0.0)))
+
+// --- 1分足データの非リペイント取得 ---
+[dxyO, dxyH, dxyL, dxyC] = request.security(dxySym, "1", [open, high, low, close], barmerge.gaps_off, barmerge.lookahead_off)
+us10yC = request.security(us10ySym, "1", close, barmerge.gaps_off, barmerge.lookahead_off)
+us02yC = request.security(us02ySym, "1", close, barmerge.gaps_off, barmerge.lookahead_off)
+
+// --- モメンタムZスコア ＆ M5 EMA20相当 (M1 EMA100) ---
+dxyZ   = f_momentum_z(dxyC)
+us10yZ = f_momentum_z(us10yC)
+us02yZ = f_momentum_z(us02yC)
+
+// 金利は10年債と2年債の合成（片方が休場・欠損でも自動補完）
+yieldZ = (us10yZ != 0.0 and us02yZ != 0.0) ? (0.6 * us10yZ + 0.4 * us02yZ) : (us10yZ != 0.0 ? us10yZ : us02yZ)
+
+dxyEma100   = ta.ema(dxyC, 100)
+us10yEma100 = ta.ema(us10yC, 100)
+dxyAboveEma   = dxyC > dxyEma100
+us10yAboveEma = us10yC > us10yEma100
+
+// ゴールド方向への統合マクロバイアス (-1.0〜+1.0)
+biasScore = f_tanh((-0.45 * dxyZ - 0.55 * yieldZ) / 2.0)
+
+// --- 型A: コンフルエンス・マクロモメンタム (DXY + 米金利の同時一致) ---
+ad = math.abs(dxyZ)
+ay = math.abs(yieldZ)
+avgZ = 0.5 * (ad + ay)
+minZ = math.min(ad, ay)
+
+consensusMet = (ad >= zThresh and ay >= zThresh * 0.72) or (ay >= zThresh and ad >= zThresh * 0.72) or (avgZ >= zThresh and minZ >= zThresh * 0.60)
+xauEma9 = ta.ema(close, 9)
+
+macroMomBuy  = (dxyZ < 0 and yieldZ < 0 and consensusMet) and (close >= xauEma9) and (close >= open)
+macroMomSell = (dxyZ > 0 and yieldZ > 0 and consensusMet) and (close <= xauEma9) and (close <= open)
+
+// --- 型B: SMTダイバージェンス (DXYとXAUUSDの機関吸収検知) ---
+refLen = smtLookback - 8
+dxyRefHigh = ta.highest(dxyH[8], refLen)
+dxyRefLow  = ta.lowest(dxyL[8], refLen)
+xauRefHigh = ta.highest(high[8], refLen)
+xauRefLow  = ta.lowest(low[8], refLen)
+
+dxyRecHigh = ta.highest(dxyH, 8)
+dxyRecLow  = ta.lowest(dxyL, 8)
+xauRecHigh = ta.highest(high, 8)
+xauRecLow  = ta.lowest(low, 8)
+
+dxyRecRange = math.max(1e-5, dxyRecHigh - dxyRecLow)
+minDiv = math.max(0.25, nz(ta.atr(14), 0.5) * 0.5)
+
+dxyRejectDown = (dxyC < dxyO) or ((dxyRecHigh - dxyC) >= dxyRecRange * 0.30)
+dxyBounceUp   = (dxyC > dxyO) or ((dxyC - dxyRecLow) >= dxyRecRange * 0.30)
+
+smtBuy  = (dxyRecHigh > dxyRefHigh) and (xauRecLow > xauRefLow + minDiv) and dxyRejectDown and (close > open) and (close >= xauEma9)
+smtSell = (dxyRecLow < dxyRefLow)   and (xauRecHigh < xauRefHigh - minDiv) and dxyBounceUp  and (close < open) and (close <= xauEma9)
+
+// --- JSON生成ヘルパー（確定足のみ送信＝完全非リペイント） ---
+f_build_json(string sigType, string dir, float strVal, string detailTxt) =>
+    '{"token":"' + webhookToken +
+    '","symbol":"XAUUSD"' +
+    ',"signal_type":"' + sigType +
+    '","direction":"' + dir +
+    '","dxy_z":' + str.tostring(nz(dxyZ, 0.0), "0.000") +
+    ',"us10y_z":' + str.tostring(nz(us10yZ, 0.0), "0.000") +
+    ',"us02y_z":' + str.tostring(nz(us02yZ, 0.0), "0.000") +
+    ',"bias_score":' + str.tostring(nz(biasScore, 0.0), "0.000") +
+    ',"strength":' + str.tostring(nz(strVal, 1.0), "0.00") +
+    ',"dxy_above_m5_ema20":' + (dxyAboveEma ? "true" : "false") +
+    ',"us10y_above_m5_ema20":' + (us10yAboveEma ? "true" : "false") +
+    ',"detail":"' + detailTxt + '"}'
+
+// --- Webhook発火制御 (1分足確定時のみ) ---
+if barstate.isconfirmed
+    if macroMomBuy
+        alert(f_build_json("MACRO_MOMENTUM", "BUY", avgZ, "TV DXY+US10Y Bullish Gold Impulse"), alert.freq_once_per_bar_close)
+    else if macroMomSell
+        alert(f_build_json("MACRO_MOMENTUM", "SELL", avgZ, "TV DXY+US10Y Bearish Gold Impulse"), alert.freq_once_per_bar_close)
+    else if smtBuy
+        alert(f_build_json("SMT_DIVERGENCE", "BUY", 1.5, "TV Bullish SMT: DXY New High vs XAU Higher Low"), alert.freq_once_per_bar_close)
+    else if smtSell
+        alert(f_build_json("SMT_DIVERGENCE", "SELL", 1.5, "TV Bearish SMT: DXY New Low vs XAU Lower High"), alert.freq_once_per_bar_close)
+    else if sendHb and (minute % 5 == 0)
+        alert(f_build_json("MACRO_BIAS_HEARTBEAT", "NEUTRAL", math.abs(biasScore), "5m Macro Bias Sync"), alert.freq_once_per_bar_close)
+
+// --- チャート可視化 (シグナルマーカー ＆ 右上ミニHUD) ---
+plotshape(macroMomBuy,  title="型A Macro BUY",  style=shape.triangleup,   location=location.belowbar, color=color.new(color.lime, 0),    size=size.small, text="M-BUY")
+plotshape(macroMomSell, title="型A Macro SELL", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0),     size=size.small, text="M-SELL")
+plotshape(smtBuy,       title="型B SMT BUY",    style=shape.diamond,      location=location.belowbar, color=color.new(color.aqua, 0),    size=size.tiny,  text="SMT+")
+plotshape(smtSell,      title="型B SMT SELL",   style=shape.diamond,      location=location.abovebar, color=color.new(color.fuchsia, 0), size=size.tiny,  text="SMT-")
+
+var table hud = table.new(position.top_right, 2, 5, bgcolor=color.new(color.black, 20), border_width=1, border_color=color.gray)
+if barstate.islast
+    biasColor = biasScore >= 0.35 ? color.lime : (biasScore <= -0.35 ? color.red : color.silver)
+    table.cell(hud, 0, 0, "XAU Macro v9.0", text_color=color.white, text_size=size.small)
+    table.cell(hud, 1, 0, biasScore >= 0.35 ? "BULLISH" : (biasScore <= -0.35 ? "BEARISH" : "NEUTRAL"), text_color=biasColor, text_size=size.small)
+    table.cell(hud, 0, 1, "DXY Z", text_color=color.silver, text_size=size.tiny)
+    table.cell(hud, 1, 1, str.tostring(dxyZ, "0.00"), text_color=dxyZ < 0 ? color.lime : color.red, text_size=size.tiny)
+    table.cell(hud, 0, 2, "US10Y Z", text_color=color.silver, text_size=size.tiny)
+    table.cell(hud, 1, 2, str.tostring(us10yZ, "0.00"), text_color=us10yZ < 0 ? color.lime : color.red, text_size=size.tiny)
+    table.cell(hud, 0, 3, "US02Y Z", text_color=color.silver, text_size=size.tiny)
+    table.cell(hud, 1, 3, str.tostring(us02yZ, "0.00"), text_color=us02yZ < 0 ? color.lime : color.red, text_size=size.tiny)
+    table.cell(hud, 0, 4, "Bias Score", text_color=color.silver, text_size=size.tiny)
+    table.cell(hud, 1, 4, str.tostring(biasScore, "0.00"), text_color=biasColor, text_size=size.tiny)

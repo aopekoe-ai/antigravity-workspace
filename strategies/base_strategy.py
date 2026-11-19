@@ -15,6 +15,10 @@ class TradeSignal(BaseModel):
     setup_name: str
     rationale_ja: str
     invalidation_level: Optional[float] = None
+    # Step 2: ハイブリッド3系統・先行指標メタデータ（後方互換デフォルト付き）
+    entry_engine: str = "SMC"            # "SMC" | "MACRO_MOMENTUM" | "SMT_DIVERGENCE"
+    macro_source: str = "NONE"           # "TV_WEBHOOK" | "MT5_M1" | "NONE"
+    lot_multiplier: float = Field(1.0, ge=0.5, le=1.35)
 
 class BaseStrategy(ABC):
     """
