@@ -5,7 +5,7 @@ def get_dashboard_html() -> str:
     - 先行指標メーターを「何が・どのくらい・どのロジックにどう影響しているか」が直感的にわかる因果関係パネルへ刷新
     - 日々の自己最適化と動的ATRがリアルタイム反映される「📘 ロジック仕様書（生きた設計書＆変更履歴）」タブを新設
     """
-    return """<!DOCTYPE html>
+    return r"""<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
