@@ -92,9 +92,22 @@ dxyBounceUp   = (dxyC > dxyO) or ((dxyC - dxyRecLow) >= dxyRecRange * 0.30)
 smtBuy  = (dxyRecHigh > dxyRefHigh) and (xauRecLow > xauRefLow + minDiv) and dxyRejectDown and (close > open) and (close >= xauEma9)
 smtSell = (dxyRecLow < dxyRefLow)   and (xauRecHigh < xauRefHigh - minDiv) and dxyBounceUp  and (close < open) and (close <= xauEma9)
 
-// --- JSON生成ヘルパー（Pine Script v6対応・改行構文エラー完全解消） ---
+// --- JSON生成ヘルパー（配列join方式でstr.formatの波括弧パースエラーを完全回避） ---
 f_build_json(string sigType, string dir, float strVal, string detailTxt) =>
-    str.format('{{\"token\":\"{0}\",\"symbol\":\"XAUUSD\",\"signal_type\":\"{1}\",\"direction\":\"{2}\",\"dxy_z\":{3},\"us10y_z\":{4},\"us02y_z\":{5},\"bias_score\":{6},\"strength\":{7},\"dxy_above_m5_ema20\":{8},\"us10y_above_m5_ema20\":{9},\"detail\":\"{10}\"}}', webhookToken, sigType, dir, str.tostring(nz(dxyZ, 0.0), "0.000"), str.tostring(nz(us10yZ, 0.0), "0.000"), str.tostring(nz(us02yZ, 0.0), "0.000"), str.tostring(nz(biasScore, 0.0), "0.000"), str.tostring(nz(strVal, 1.0), "0.00"), dxyAboveEma ? "true" : "false", us10yAboveEma ? "true" : "false", detailTxt)
+    string[] parts = array.new_string(0)
+    array.push(parts, '{"token":"' + webhookToken + '"')
+    array.push(parts, '"symbol":"XAUUSD"')
+    array.push(parts, '"signal_type":"' + sigType + '"')
+    array.push(parts, '"direction":"' + dir + '"')
+    array.push(parts, '"dxy_z":' + str.tostring(nz(dxyZ, 0.0), "0.000"))
+    array.push(parts, '"us10y_z":' + str.tostring(nz(us10yZ, 0.0), "0.000"))
+    array.push(parts, '"us02y_z":' + str.tostring(nz(us02yZ, 0.0), "0.000"))
+    array.push(parts, '"bias_score":' + str.tostring(nz(biasScore, 0.0), "0.000"))
+    array.push(parts, '"strength":' + str.tostring(nz(strVal, 1.0), "0.00"))
+    array.push(parts, '"dxy_above_m5_ema20":' + (dxyAboveEma ? "true" : "false"))
+    array.push(parts, '"us10y_above_m5_ema20":' + (us10yAboveEma ? "true" : "false"))
+    array.push(parts, '"detail":"' + detailTxt + '"}')
+    array.join(parts, ",")
 
 // --- Webhook発火制御 (1分足確定時のみ) ---
 if barstate.isconfirmed
