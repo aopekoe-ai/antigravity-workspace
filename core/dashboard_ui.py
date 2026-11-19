@@ -503,9 +503,6 @@ def get_dashboard_html() -> str:
             <div class="form-label"><span>連敗防止待機 (分) <span style="font-size:10px;color:var(--gold);">(0で待機なし)</span></span></div>
             <input type="number" id="cfg-sl-cool" class="form-input" step="1" min="0" value="15" placeholder="0で待機なし">
           </div>
-          <div style="margin-top:14px;">
-            <button class="btn btn-gold btn-block" onclick="confirmSaveControlConfig()">💾 運用パラメータを保存 (確認へ)</button>
-          </div>
         </div>
       </div>
 
@@ -523,9 +520,8 @@ def get_dashboard_html() -> str:
             <div class="form-label"><span>日次運用ブリーフィング配信時刻 (JST)</span></div>
             <select id="cfg-daily-hour" class="form-select"><option value="6">毎朝 06:00 JST (NYクローズ直後)</option><option value="7">毎朝 07:00 JST</option><option value="8">毎朝 08:00 JST</option></select>
           </div>
-          <div style="display:flex;gap:8px;margin-top:10px;">
-            <button class="btn btn-gold btn-block" onclick="confirmSaveControlConfig()">💾 設定・改修方針を保存 (確認へ)</button>
-            <button class="btn btn-primary" style="white-space:nowrap;" onclick="confirmTriggerLabTask('daily_report')">📨 日次レポート送信</button>
+          <div style="margin-top:10px;text-align:right;">
+            <button class="btn btn-primary" style="white-space:nowrap;" onclick="confirmTriggerLabTask('daily_report')">📨 日次レポートを手動テスト送信</button>
           </div>
         </div>
 
@@ -558,30 +554,18 @@ def get_dashboard_html() -> str:
       </div>
     </div>
 
-    <!-- 全体一括保存バー -->
-    <div class="card" style="margin-top:14px;background:rgba(245,158,11,0.06);border-color:rgba(245,158,11,0.3);text-align:center;">
+    <!-- 唯一の保存ボタン（最下部に配置） -->
+    <div class="card" style="margin-top:16px;background:rgba(245,158,11,0.08);border:1px solid var(--gold);text-align:center;">
       <div style="font-size:13px;color:var(--text);margin-bottom:10px;">
-        💡 変更した稼働ロジック、リスク、許容スプレッド、AI方針を本番BOTへ反映します
+        💡 変更した稼働ロジック・リスク・日次最大DD・スプレッド・AI方針をすべて本番BOTへ反映します
       </div>
-      <button class="btn btn-gold btn-block" style="padding:12px;font-size:14px;" onclick="confirmSaveControlConfig()">
-        💾 変更した運用設定を本番へ保存・反映 (確認へ)
+      <button class="btn btn-gold btn-block" style="padding:15px;font-size:15px;font-weight:800;" onclick="confirmSaveControlConfig()">
+        💾 設定を保存して本番へ反映する (確認へ)
       </button>
     </div>
     </div>
   </section>
 </main>
-
-<!-- ロック解除時にスマホ画面下部に固定追従する保存バー -->
-<div id="sticky-save-bar" class="sticky-save-bar">
-  <div>
-    <div style="font-size:12px;font-weight:800;color:var(--gold);">⚡ 設定編集中</div>
-    <div style="font-size:10px;color:var(--muted);">完了したら保存してください</div>
-  </div>
-  <div style="display:flex;gap:8px;">
-    <button class="btn btn-sm" onclick="toggleEditLock(false)">✖ 戻す</button>
-    <button class="btn btn-sm btn-gold" onclick="confirmSaveControlConfig()">💾 保存して反映</button>
-  </div>
-</div>
 
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span><span>LIVE監視</span></button>
@@ -633,14 +617,6 @@ function switchTab(name, btn) {
   document.getElementById('tab-' + name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const stickyBar = document.getElementById('sticky-save-bar');
-  if (stickyBar) {
-    if (name === 'control' && isEditUnlocked) {
-      stickyBar.classList.add('show');
-    } else {
-      stickyBar.classList.remove('show');
-    }
-  }
   if (name === 'lab') runBacktest();
 }
 
@@ -1260,15 +1236,13 @@ function toggleEditLock(forceState=null) {
   const banner = document.getElementById('edit-lock-banner');
   const title = document.getElementById('edit-lock-title');
   const btn = document.getElementById('edit-lock-btn');
-  const stickyBar = document.getElementById('sticky-save-bar');
   if (isEditUnlocked) {
     zone.classList.add('unlocked');
     banner.classList.add('unlocked');
-    title.textContent = '🔓 編集モード解除中（変更後に保存ボタンを押すと確認ポップアップが出ます）';
+    title.textContent = '🔓 編集モード解除中（変更後に最下部の保存ボタンを押してください）';
     title.style.color = 'var(--bull)';
     btn.textContent = '🔒 編集ロックに戻す';
     btn.className = 'btn btn-sm';
-    if (stickyBar) stickyBar.classList.add('show');
   } else {
     zone.classList.remove('unlocked');
     banner.classList.remove('unlocked');
@@ -1276,7 +1250,6 @@ function toggleEditLock(forceState=null) {
     title.style.color = 'var(--gold)';
     btn.textContent = '🔓 ロックを解除して編集';
     btn.className = 'btn btn-sm btn-gold';
-    if (stickyBar) stickyBar.classList.remove('show');
     controlsInitialized = false;
     if (window._lastFetchedState) populateControls(window._lastFetchedState);
   }
