@@ -50,6 +50,11 @@ def run_trading_daemon():
     last_daily_review_day = -1
     last_signal_time = None
 
+    # Step 1: 同方向連続SL自滅防止ステート & 決済同期トラッカー
+    last_loss_direction = None
+    last_loss_time = None
+    known_closed_deals = set()
+
     while True:
         try:
             now = datetime.datetime.now()
@@ -92,6 +97,27 @@ def run_trading_daemon():
             if be_result:
                 print(f"[BREAK-EVEN TRIGGERED] {be_result}")
 
+            # --- B-3. 決済検知 ＆ 損益同期 ＆ 同方向SLトラッキング ---
+            try:
+                from core.mt5_conn import mt5
+                now_check = datetime.datetime.now()
+                recent_deals = mt5.history_deals_get(now_check - datetime.timedelta(hours=2), now_check)
+                if recent_deals:
+                    for d in recent_deals:
+                        if d.entry == 1 and d.ticket not in known_closed_deals: # 決済Deal
+                            known_closed_deals.add(d.ticket)
+                            profit = getattr(d, 'profit', 0.0)
+                            review_engine.log_trade_close(d.order, d.price, profit)
+                            # 負けトレードだった場合、方向と時刻を記録（同方向連敗ループ防止）
+                            if profit < -500:
+                                # d.type == 0 はBUY決済(元SELL), 1はSELL決済(元BUY)
+                                closed_dir = "SELL" if d.type == 0 else "BUY"
+                                last_loss_direction = closed_dir
+                                last_loss_time = now_check
+                                print(f"[SL DETECTED] {closed_dir} が損切り決済 (-¥{abs(profit):,.0f})。同方向のエントリーを一時警戒。")
+            except Exception as e:
+                pass
+
             # --- C. 戦略シグナルの評価（SMC流動性スイープ） ---
             signal = strategy.evaluate(market_state)
 
@@ -133,6 +159,12 @@ def run_trading_daemon():
                     # 3. 単一ポジション限定チェック
                     elif risk_manager.enforce_single_pos and risk_manager.has_open_positions(symbol):
                         print(f"[REJECTED] 既に {symbol} のポジションを保有中。単ポジ厳守のため新規発注をブロック。")
+
+                    # 3-2. 同方向SL直後の連敗ループ防止（直前SLと同じ方向の場合、15分間は同方向エントリーを見送り）
+                    elif (last_loss_direction == signal.action and last_loss_time is not None and 
+                          (datetime.datetime.now() - last_loss_time).total_seconds() < 900):
+                        elapsed_s = int((datetime.datetime.now() - last_loss_time).total_seconds())
+                        print(f"[REJECTED] 直前に {signal.action} でSL被弾 ({elapsed_s}秒前)。同方向の連打自滅を防止するため一時見送り。")
 
                     else:
                         # 4. AI マクロNLPガード判定

@@ -1694,5 +1694,21 @@
     "close_price": null,
     "profit": null,
     "close_time": null
+  },
+  {
+    "order_id": "2910654391",
+    "time": "2026-11-19 02:25:15",
+    "symbol": "XAUUSD",
+    "action": "SELL",
+    "volume": 0.11,
+    "price": 3748.1440000000002,
+    "sl": 3752.703,
+    "tp": 3741.568,
+    "setup_name": "ICT_NewYork_Bearish_FVG_Retest",
+    "rationale": "[NewYork] 大口インパルス波の未埋め不均衡ゾーン (FVG: $3748.34-$3751.05) への戻り目リジェクションを検知。戻り売り。SL: 44.5pips, RR 1:1.5",
+    "status": "OPEN",
+    "close_price": null,
+    "profit": null,
+    "close_time": null
   }
 ]

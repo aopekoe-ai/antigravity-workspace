@@ -80,13 +80,61 @@ class InstitutionalRiskManager:
 
     def apply_break_even_protection(self, symbol: str, pip_size: float = 0.10) -> Optional[str]:
         """
-        【プロップファーム仕様】建値移動 (Break-Even) 自動スライド
-        未実現利益が初期SL幅（約20pips以上）に達した場合、SLを即座に「建値 + 1pip（微益確保）」へ引き上げ、
-        負けの可能性を完全に排除してフリーライド（利益追求）状態にする。
+        【適正化プロップファーム仕様】建値移動 (Break-Even) 自動スライド
+        未実現利益が「初期SL幅と同等（RR 1:1以上、最低25pips）」に達した時のみSLを「建値 + 2pips」へ引き上げ、
+        ノイズによる微益狩りを完全に排除して本来のTP（平均+1.7万円以上）まで伸ばす。
         """
         positions = mt5.positions_get(symbol=symbol)
         if not positions or len(positions) == 0:
             return None
+
+        pos = positions[0]
+        ticket = pos.ticket
+        pos_type = pos.type  # 0: BUY, 1: SELL
+        open_price = float(pos.price_open)
+        current_price = float(pos.price_current)
+        current_sl = float(pos.sl)
+
+        # SLが設定されている場合、初期SL距離を計算。未設定の場合は最低25pips
+        if current_sl > 0:
+            initial_sl_dist = abs(open_price - current_sl)
+        else:
+            initial_sl_dist = 25.0 * pip_size
+
+        # トリガーは「初期リスク（SL幅）の1.0倍以上（RR 1:1到達時、かつ最低25pips）」
+        be_trigger_dollars = max(25.0 * pip_size, initial_sl_dist * 0.95)
+        be_buffer_dollars = 2.0 * pip_size
+
+        if pos_type == 0:  # BUY
+            profit_dollars = current_price - open_price
+            new_sl = open_price + be_buffer_dollars
+            if profit_dollars >= be_trigger_dollars and (current_sl < open_price or current_sl == 0.0):
+                req = {
+                    "action": mt5.TRADE_ACTION_SLTP,
+                    "position": ticket,
+                    "symbol": symbol,
+                    "sl": round(new_sl, 2),
+                    "tp": float(pos.tp)
+                }
+                res = mt5.order_send(req)
+                if res and res.retcode == mt5.TRADE_RETCODE_DONE:
+                    return f"BUY #{ticket} RR1:1到達による建値移動完了 (SL -> )"
+        else:  # SELL
+            profit_dollars = open_price - current_price
+            new_sl = open_price - be_buffer_dollars
+            if profit_dollars >= be_trigger_dollars and (current_sl > open_price or current_sl == 0.0):
+                req = {
+                    "action": mt5.TRADE_ACTION_SLTP,
+                    "position": ticket,
+                    "symbol": symbol,
+                    "sl": round(new_sl, 2),
+                    "tp": float(pos.tp)
+                }
+                res = mt5.order_send(req)
+                if res and res.retcode == mt5.TRADE_RETCODE_DONE:
+                    return f"SELL #{ticket} RR1:1到達による建値移動完了 (SL -> )"
+
+        return None
 
         pos = positions[0]
         ticket = pos.ticket

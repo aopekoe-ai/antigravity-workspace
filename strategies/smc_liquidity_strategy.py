@@ -95,13 +95,13 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
             # 強気FVG (Bullish FVG): 1本目の高値 < 3本目の安値 (ギャップ)
             if c_c0['low'] > c_p2['high']:
                 gap = c_c0['low'] - c_p2['high']
-                if gap >= self.min_fvg_gap:  # 有意な不均衡
+                if gap >= getattr(self, '_current_min_fvg_gap', 0.40):  # 有意な不均衡
                     return {"type": "BULLISH_FVG", "top": float(c_c0['low']), "bottom": float(c_p2['high']), "index": i}
 
             # 弱気FVG (Bearish FVG): 1本目の安値 > 3本目の高値 (ギャップ)
             if c_p2['low'] > c_c0['high']:
                 gap = c_p2['low'] - c_c0['high']
-                if gap >= self.min_fvg_gap:
+                if gap >= getattr(self, '_current_min_fvg_gap', 0.40):
                     return {"type": "BEARISH_FVG", "top": float(c_p2['low']), "bottom": float(c_c0['high']), "index": i}
         return None
 
@@ -115,6 +115,11 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
         asia_low = market_data.get("asia_low")
         pdh = market_data.get("pdh")
         pdl = market_data.get("pdl")
+        h1_trend = market_data.get("h1_trend", "NEUTRAL")
+        h1_ema20 = market_data.get("h1_ema20", 0.0)
+        effective_min_sl_pips = max(18.0, round((atr_dollars * 1.0) / pip_size, 1))
+        effective_max_sl_pips = max(50.0, round((atr_dollars * 3.5) / pip_size, 1))
+        effective_min_fvg_gap = max(0.40, round(atr_dollars * 0.30, 2))
 
         # 1. セッションフィルター
         active_session = self.get_active_session()
@@ -178,7 +183,7 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
                     sl_price = sweep_h + (atr_dollars * (self.atr_multiplier * 0.25))
                     sl_pips = round((sl_price - current_bid) / pip_size, 1)
 
-                    if self.min_sl_pips <= sl_pips <= self.max_sl_pips:
+                    if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
                         tp_pips = round(sl_pips * self.min_rr, 1)
                         tp_price = current_bid - (tp_pips * pip_size)
                         rr = round(tp_pips / sl_pips, 2)
@@ -213,7 +218,7 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
                     sl_price = sweep_l - (atr_dollars * (self.atr_multiplier * 0.25))
                     sl_pips = round((current_ask - sl_price) / pip_size, 1)
 
-                    if self.min_sl_pips <= sl_pips <= self.max_sl_pips:
+                    if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
                         tp_pips = round(sl_pips * self.min_rr, 1)
                         tp_price = current_ask + (tp_pips * pip_size)
                         rr = round(tp_pips / sl_pips, 2)
@@ -236,26 +241,30 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
         # =====================================================================
         # トリガー 2: ICT Fair Value Gap (FVG / 不均衡ゾーン) リテスト
         # =====================================================================
+        self._current_min_fvg_gap = effective_min_fvg_gap
         fvg = self._find_recent_fvg(df_m5)
         if fvg:
             # 強気FVGへの押し目タッチ ＆ 反発
             if fvg["type"] == "BULLISH_FVG" and (c1['low'] <= fvg["top"]) and (c1['close'] > fvg["bottom"]):
                 sl_price = fvg["bottom"] - (atr_dollars * 0.3)
                 sl_pips = round((current_ask - sl_price) / pip_size, 1)
-                if self.min_sl_pips <= sl_pips <= self.max_sl_pips:
+                if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
                     tp_pips = round(sl_pips * self.min_rr, 1)
                     tp_price = current_ask + (tp_pips * pip_size)
                     rr = round(tp_pips / sl_pips, 2)
-                    return TradeSignal(
-                        action="BUY",
-                        confidence=0.84,
-                        suggested_entry_price=current_ask,
-                        suggested_sl_price=sl_price,
-                        suggested_tp_price=tp_price,
-                        sl_distance_pips=sl_pips,
-                        tp_distance_pips=tp_pips,
-                        risk_reward_ratio=rr,
-                        setup_name=f"ICT_{active_session}_Bullish_FVG_Retest",
+                    if h1_trend == "BEARISH":
+                        pass  # H1下降トレンド中の買いFVGは除外
+                    else:
+                        return TradeSignal(
+                            action="BUY",
+                            confidence=0.84,
+                            suggested_entry_price=current_ask,
+                            suggested_sl_price=sl_price,
+                            suggested_tp_price=tp_price,
+                            sl_distance_pips=sl_pips,
+                            tp_distance_pips=tp_pips,
+                            risk_reward_ratio=rr,
+                            setup_name=f"ICT_{active_session}_Bullish_FVG_Retest",
                         rationale_ja=f"[{active_session}] 大口インパルス波の未埋め不均衡ゾーン (FVG: ${fvg['bottom']:.2f}-${fvg['top']:.2f}) へのプルバック反発を検知。押し目買い。SL: {sl_pips}pips, RR 1:{rr}",
                         invalidation_level=sl_price
                     )
@@ -264,20 +273,23 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
             if fvg["type"] == "BEARISH_FVG" and (c1['high'] >= fvg["bottom"]) and (c1['close'] < fvg["top"]):
                 sl_price = fvg["top"] + (atr_dollars * 0.3)
                 sl_pips = round((sl_price - current_bid) / pip_size, 1)
-                if self.min_sl_pips <= sl_pips <= self.max_sl_pips:
+                if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
                     tp_pips = round(sl_pips * self.min_rr, 1)
                     tp_price = current_bid - (tp_pips * pip_size)
                     rr = round(tp_pips / sl_pips, 2)
-                    return TradeSignal(
-                        action="SELL",
-                        confidence=0.84,
-                        suggested_entry_price=current_bid,
-                        suggested_sl_price=sl_price,
-                        suggested_tp_price=tp_price,
-                        sl_distance_pips=sl_pips,
-                        tp_distance_pips=tp_pips,
-                        risk_reward_ratio=rr,
-                        setup_name=f"ICT_{active_session}_Bearish_FVG_Retest",
+                    if h1_trend == "BULLISH":
+                        pass  # H1上昇トレンド中の売りFVGは除外
+                    else:
+                        return TradeSignal(
+                            action="SELL",
+                            confidence=0.84,
+                            suggested_entry_price=current_bid,
+                            suggested_sl_price=sl_price,
+                            suggested_tp_price=tp_price,
+                            sl_distance_pips=sl_pips,
+                            tp_distance_pips=tp_pips,
+                            risk_reward_ratio=rr,
+                            setup_name=f"ICT_{active_session}_Bearish_FVG_Retest",
                         rationale_ja=f"[{active_session}] 大口インパルス波の未埋め不均衡ゾーン (FVG: ${fvg['bottom']:.2f}-${fvg['top']:.2f}) への戻り目リジェクションを検知。戻り売り。SL: {sl_pips}pips, RR 1:{rr}",
                         invalidation_level=sl_price
                     )
@@ -293,7 +305,7 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
             if ema20 > ema50 and h1_trend != "BEARISH" and (c1['low'] <= ema20 * 1.0006) and (c1['close'] > ema20) and (c1['close'] >= c1['open']):
                 sl_price = min(c1['low'], ema50) - (atr_dollars * 0.3)
                 sl_pips = round((current_ask - sl_price) / pip_size, 1)
-                if self.min_sl_pips <= sl_pips <= self.max_sl_pips:
+                if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
                     tp_pips = round(sl_pips * self.min_rr, 1)
                     tp_price = current_ask + (tp_pips * pip_size)
                     rr = round(tp_pips / sl_pips, 2)
@@ -315,7 +327,7 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
             if ema20 < ema50 and h1_trend != "BULLISH" and (c1['high'] >= ema20 * 0.9994) and (c1['close'] < ema20) and (c1['close'] <= c1['open']):
                 sl_price = max(c1['high'], ema50) + (atr_dollars * 0.3)
                 sl_pips = round((sl_price - current_bid) / pip_size, 1)
-                if self.min_sl_pips <= sl_pips <= self.max_sl_pips:
+                if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
                     tp_pips = round(sl_pips * self.min_rr, 1)
                     tp_price = current_bid - (tp_pips * pip_size)
                     rr = round(tp_pips / sl_pips, 2)
