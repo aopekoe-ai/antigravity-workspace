@@ -96,3 +96,14 @@
   * **型B (SMTダイバージェンス / FVG不要)**: DXY vs XAUUSD M1同期35分スイング比較で機関吸収を検知（RR 2.0）。
   * **系統3 (既存SMC＋ソフト/ハードオーバーレイ)**: 極端逆行(`<= -0.70`)のみブロック、微逆行(`<= -0.35`)はロット0.75x、順行(`>= +0.35`)はロット1.25x＆TP+15%拡張。
 * **利益防衛マクロ反転トレーリング**: 含み益がM5 ATR×1.1（かつ25pips）以上乗った状態でDXY＆金利がM5 EMA20を逆抜けした場合、SLを段階引き上げ。
+
+---
+
+## 7. Step 3 確定仕様 (2026-11-19 / 先行指標レジーム適応 ＆ ログ保全)
+* **リアルタイム4レジーム適応 (`DynamicParamOptimizer.classify_and_adapt_regime`)**:
+  * `REGIME_MACRO_TREND` / `REGIME_GEO_VOLATILITY` / `REGIME_MACRO_CHOP` / `REGIME_NORMAL_FLOW` を15秒ごとに判定し、RR比・型A感度・ATR SL倍率をガードレール内でオンメモリ動的調整。
+* **MT5決済損益の完全突合 (`ReviewEngine.reconcile_with_mt5_history`)**:
+  * 起動時・決済検知時・日次レビュー前にMT5の `position_id` / `order` と `trade_journal.json` を自動突合し、未同期のOPENレコードをゼロに保つ。
+* **ログ＆ディスク永久保全 (`LogMaintainer` + Docker log limit)**:
+  * `trade_journal.json`（上限300件＋OPEN）および `learning_journal.md`（上限256KB）の超過分を `logs/archive/*.gz` へ自動圧縮退避。
+  * `docker-compose.yml` でコンテナログを `10MB × 3世代` に制限。

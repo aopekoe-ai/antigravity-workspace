@@ -16,9 +16,10 @@ from notifications.discord_manager import DiscordManager
 
 def run_trading_daemon():
     """
-    【VPS常駐型】24時間リアルタイム・クオンツ取引エンジン v9.0
-    SMC 3トリガー ＋ 型A（コンフルエンス・マクロモメンタム）＋ 型B（SMTダイバージェンス）
-    TradingView Webhook 主系 ＆ Exness MT5 M1 自動フェイルオーバー構成
+    【VPS常駐型】24時間リアルタイム・クオンツ取引エンジン v9.0 (Step 1〜3 完全統合版)
+    - Step 1: RR 1:1 建値移動・M5 ATR動的スケーリング・同方向連続SLループ防止
+    - Step 2: 3系統ハイブリッド（SMC + 型Aマクロモメンタム + 型B SMT）・TV Webhook主系 + MT5 M1自動フェイルオーバー
+    - Step 3: 先行指標レジーム連動リアルタイム自己最適化・MT5決済履歴完全同期・長期ログローテーション保全
     """
     print("==================================================================")
     print("🤖 Institutional SMC + Macro Hybrid Trading System v9.0 Starting...")
@@ -63,14 +64,19 @@ def run_trading_daemon():
         print("[FATAL ERROR] MT5への初期接続に失敗しました。MT5が起動しているか確認してください。")
         return
 
+    # Step 3: 起動時に過去30日分のMT5決済履歴とジャーナルを完全突合＆ログローテーション保全
+    review_engine.reconcile_with_mt5_history(days=30)
+    review_engine.log_maintainer.run_maintenance()
+
     print(f"[SYSTEM READY] 対象銘柄: {symbol}, 戦略: {strategy.name}")
-    print("[SYSTEM READY] 3系統ハイブリッド（SMC + 型Aマクロモメンタム + 型B SMT）スキャン開始...")
+    print("[SYSTEM READY] 3系統ハイブリッド ＋ レジーム連動自己最適化スキャン開始...")
 
     last_hourly_report_hour = -1
     last_daily_review_day = -1
     last_signal_bar_time = None
     last_macro_entry_ts = 0.0
     last_logged_macro_source = None
+    last_logged_regime = None
 
     # Step 1: 同方向連続SL自滅防止ステート & 決済同期トラッカー
     last_loss_direction = None
@@ -87,15 +93,13 @@ def run_trading_daemon():
             strategy.sessions_config = exec_filters.get("allowed_sessions_jst", strategy.sessions_config)
             ai_guard.cache_ttl_minutes = params.get("ai_guard", {}).get("cache_ttl_minutes", 20)
 
-            macro_cfg = params.get("macro_engine", {})
+            macro_cfg = dict(params.get("macro_engine", {}))
+            base_dyn_params = review_engine.optimizer.load_active_params()
+            if "momentum_z_threshold" in base_dyn_params:
+                macro_cfg["momentum_z_threshold"] = base_dyn_params["momentum_z_threshold"]
+
             macro_engine.update_config(macro_cfg)
             strategy.update_macro_config(macro_cfg)
-
-            # 動的オプティマイザの最適化パラメータをリアルタイム反映
-            dyn_params = review_engine.optimizer.load_active_params()
-            strategy.update_dynamic_params(dyn_params)
-            if "max_allowed_spread_pips" in dyn_params:
-                max_spread = dyn_params["max_allowed_spread_pips"]
 
             # --- A. 市場データ ＆ 特徴量の取得 ---
             market_state = data_engine.get_market_state(
@@ -123,6 +127,26 @@ def run_trading_daemon():
                     last_logged_macro_source = cur_src
             market_state["macro_state"] = macro_state
 
+            # --- A-3. Step 3: 先行指標レジーム連動リアルタイム自己最適化 ---
+            active_regime, adapted_params = review_engine.optimizer.classify_and_adapt_regime(
+                base_params=base_dyn_params,
+                market_state=market_state,
+                macro_state=macro_state,
+            )
+            strategy.update_dynamic_params(adapted_params)
+            if "max_allowed_spread_pips" in adapted_params:
+                max_spread = adapted_params["max_allowed_spread_pips"]
+
+            if active_regime != last_logged_regime:
+                print(
+                    f"🎛️ [REGIME ADAPTED] 相場レジーム: {active_regime} "
+                    f"(SMC_RR=1:{adapted_params.get('min_risk_reward_ratio')}, "
+                    f"Macro_RR=1:{adapted_params.get('macro_min_rr')}, "
+                    f"Mom_Z={adapted_params.get('momentum_z_threshold')}, "
+                    f"ATR_Mult={adapted_params.get('atr_sl_multiplier')})"
+                )
+                last_logged_regime = active_regime
+
             current_spread = market_state["spread_pips"]
             account_state = risk_manager.get_account_state()
 
@@ -148,22 +172,31 @@ def run_trading_daemon():
             if trail_result:
                 print(f"[MACRO TRAILING TRIGGERED] {trail_result}")
 
-            # --- B-3. 決済検知 ＆ 損益同期 ＆ 同方向SLトラッキング ---
+            # --- B-3. 決済検知 ＆ 損益同期（position_id対応） ＆ 同方向SLトラッキング ---
             try:
                 from core.mt5_conn import mt5
                 now_check = datetime.datetime.now()
-                recent_deals = mt5.history_deals_get(now_check - datetime.timedelta(hours=2), now_check)
+                recent_deals = mt5.history_deals_get(now_check - datetime.timedelta(hours=2), now_check + datetime.timedelta(hours=12))
                 if recent_deals:
                     for d in recent_deals:
                         if d.entry == 1 and d.ticket not in known_closed_deals:
                             known_closed_deals.add(d.ticket)
-                            profit = getattr(d, 'profit', 0.0)
-                            review_engine.log_trade_close(d.order, d.price, profit)
-                            if profit < -500:
+                            net_profit = (
+                                float(getattr(d, 'profit', 0.0))
+                                + float(getattr(d, 'swap', 0.0))
+                                + float(getattr(d, 'commission', 0.0))
+                            )
+                            review_engine.log_trade_close(
+                                order_id=d.order,
+                                close_price=d.price,
+                                profit=net_profit,
+                                position_id=getattr(d, 'position_id', None),
+                            )
+                            if net_profit < -500:
                                 closed_dir = "SELL" if d.type == 0 else "BUY"
                                 last_loss_direction = closed_dir
                                 last_loss_time = now_check
-                                print(f"[SL DETECTED] {closed_dir} が損切り決済 (-¥{abs(profit):,.0f})。同方向のエントリーを一時警戒。")
+                                print(f"[SL DETECTED] {closed_dir} が損切り決済 (-¥{abs(net_profit):,.0f})。同方向のエントリーを一時警戒。")
             except Exception:
                 pass
 
@@ -188,7 +221,7 @@ def run_trading_daemon():
             if now.hour == 6 and now.day != last_daily_review_day:
                 print(f"[DAILY REVIEW TRIGGER] {now.strftime('%Y-%m-%d %H:%M:%S')} - 日次振り返りPDCAを実行中...")
                 eval_data = review_engine.generate_daily_review(
-                    market_summary=f"Ask: ${market_state['current_ask']:.2f}, ATR: {market_state['atr_m15_pips']} pips"
+                    market_summary=f"Ask: ${market_state['current_ask']:.2f}, ATR: {market_state['atr_m15_pips']} pips, Regime: {active_regime}"
                 )
                 discord_mgr.send_daily_review_report(eval_data)
                 last_daily_review_day = now.day
@@ -199,9 +232,6 @@ def run_trading_daemon():
                 df_bar = market_state.get("df_m5") if market_state.get("df_m5") is not None else market_state.get("df_m15")
                 current_bar_time = df_bar.iloc[-1]["time"] if df_bar is not None else None
 
-                # 重複エントリー防止:
-                # - SMCは同一M5バー内で1回まで
-                # - 指標発信系（型A/型B）は直近エントリーから180秒のクールダウンで機動的かつ多重発注を防止
                 if signal.entry_engine in ("MACRO_MOMENTUM", "SMT_DIVERGENCE"):
                     can_fire_dedup = (now_ts - last_macro_entry_ts) >= 180
                 else:
@@ -209,11 +239,11 @@ def run_trading_daemon():
 
                 if can_fire_dedup:
                     print(
-                        f"\n⚡ [SIGNAL DETECTED] [{signal.entry_engine}/{signal.macro_source}] "
+                        f"\n⚡ [SIGNAL DETECTED] [{signal.entry_engine}/{signal.macro_source}/{active_regime}] "
                         f"{signal.action} - {signal.setup_name} (確信度: {signal.confidence * 100:.0f}%, ロット倍率: {signal.lot_multiplier:.2f}x)"
                     )
 
-                    # 2. スプレッドフィルター（スリッページ防止・Exness異常拡大ゲート）
+                    # 2. スプレッドフィルター
                     if current_spread > max_spread:
                         print(f"[REJECTED] スプレッド過大 ({current_spread} pips > {max_spread} pips). 正常化待機。")
 
@@ -221,7 +251,7 @@ def run_trading_daemon():
                     elif risk_manager.enforce_single_pos and risk_manager.has_open_positions(symbol):
                         print(f"[REJECTED] 既に {symbol} のポジションを保有中。単ポジ厳守のため新規発注をブロック。")
 
-                    # 3-2. 同方向SL直後の連敗ループ防止（直前SLと同じ方向の場合、15分間は同方向エントリーを見送り）
+                    # 3-2. 同方向SL直後の連敗ループ防止
                     elif (
                         last_loss_direction == signal.action
                         and last_loss_time is not None
@@ -231,7 +261,7 @@ def run_trading_daemon():
                         print(f"[REJECTED] 直前に {signal.action} でSL被弾 ({elapsed_s}秒前)。同方向の連打自滅を防止するため一時見送り。")
 
                     else:
-                        # 4. AI マクロNLPガード判定（超省トークンTTL20分キャッシュ）
+                        # 4. AI マクロNLPガード判定
                         macro_allowed, macro_reason = ai_guard.check_macro_safety(symbol)
                         if not macro_allowed:
                             print(f"[AI GUARD HALT] マクロ危険水準検知により発注停止: {macro_reason}")
@@ -257,13 +287,13 @@ def run_trading_daemon():
                                 last_signal_bar_time = current_bar_time
                                 if signal.entry_engine in ("MACRO_MOMENTUM", "SMT_DIVERGENCE"):
                                     last_macro_entry_ts = now_ts
-                                    # TradingView由来のトリガーを消費済みにして二重発火を完全防止
                                     if signal.macro_source == "TV_WEBHOOK":
                                         kind = "momentum" if signal.entry_engine == "MACRO_MOMENTUM" else "smt"
                                         webhook_store.mark_consumed(kind)
 
                                 signal_data = signal.model_dump()
                                 signal_data["macro_reason"] = macro_reason
+                                signal_data["active_regime"] = active_regime
                                 review_engine.log_trade_execution(exec_result, signal_data)
                                 discord_mgr.send_execution_alert(exec_result, signal_data)
 

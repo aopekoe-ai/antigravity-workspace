@@ -4,6 +4,25 @@
 
 ---
 
+## [2026-11-19] Step 3: 先行指標レジーム連動リアルタイム自己最適化 ＆ MT5損益完全同期 ＆ ログ保全
+### 1. 先行指標レジーム連動のリアルタイムパラメータ適応 (`core/dynamic_optimizer.py`, `main.py`)
+- 15秒スキャンごとに先行指標（DXY/米金利）とH1トレンドから相場を4レジームに自動分類し、ガードレール内で実効パラメータを動的最適化：
+  1. `REGIME_MACRO_TREND`（先行指標＋H1順張り一致の強トレンド）：RR比を `+0.25` 拡張（利伸ばし）、型A発火Z閾値を `-0.10` 緩和（機会最大化）。
+  2. `REGIME_GEO_VOLATILITY`（地政学リスクオフ・高ボラ）：ATR SL倍率を `+0.15` 拡張してヒゲ狩りを防ぎ、ロット逆算でリスク額を一定化。
+  3. `REGIME_MACRO_CHOP`（DXYと金利のねじれ・レンジ錯綜）：SMC利確RRを `-0.10` 引き締めて確実利確、型Aのダマシブレイク閾値を `+0.15` 厳格化しつつフラクタル/SMTを優先。
+  4. `REGIME_NORMAL_FLOW`（通常バランス相場）：日次較正されたベースパラメータを適用。
+
+### 2. MT5決済履歴との自動突合バックフィル ＆ クオンツ統計自己較正 (`core/review_engine.py`)
+- `trade_journal.json` の `order_id`（文字列）とMT5決済Dealの `position_id` / `order` を突合する `reconcile_with_mt5_history()` を実装し、過去の未同期トレード損益を一括バックフィル同期。
+- 毎朝06:00 JSTの日次PDCA時に、直近50件の確定トレード統計（勝率・頻度）から数理的な較正案を算出し、Gemini 2.5 Flashの提案と統合して安全ガードレール内で自動更新。
+
+### 3. 長期24時間稼働のログ・ディスク保全 (`core/log_maintainer.py`, `docker-compose.yml`)
+- `trade_journal.json` は直近300件＋OPEN建玉のみをアクティブ保持し、古い履歴を `logs/archive/trade_journal_YYYYMM.json.gz` へ自動gzip圧縮退避。
+- `learning_journal.md` も256KB超過時に古いセクションをgzipアーカイブ化。
+- Dockerコンテナログに `max-size: 10m`, `max-file: 3` のローテーション上限を設定し、VPSのSSD圧迫を永久防止。
+
+---
+
 ## [2026-11-19] Step 2: 3系統ハイブリッド＆デュアル先行指標エンジン (v9.0 Institutional Macro-Hybrid)
 ### アーキテクチャ刷新（TradingView主系 ＋ MT5 M1自動フェイルオーバー）
 - **ポート80 TradingView Webhook受信サーバー新設** (`core/webhook_server.py`, `docker-compose.yml`):

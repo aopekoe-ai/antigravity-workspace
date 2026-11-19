@@ -55,6 +55,11 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
             self.max_sl_pips = float(dynamic_params["max_sl_pips"])
         if "atr_sl_multiplier" in dynamic_params:
             self.atr_multiplier = float(dynamic_params["atr_sl_multiplier"])
+        for m_key in ("momentum_z_threshold", "macro_sl_atr_multiplier", "macro_min_rr", "smt_min_rr"):
+            if m_key in dynamic_params:
+                self.macro_cfg[m_key] = float(dynamic_params[m_key])
+        if "active_regime" in dynamic_params:
+            self.active_regime = str(dynamic_params["active_regime"])
 
     def update_macro_config(self, macro_cfg: Dict[str, Any]):
         if macro_cfg:
