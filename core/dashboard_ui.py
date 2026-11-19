@@ -1,7 +1,9 @@
 def get_dashboard_html() -> str:
     """
-    スマホ＆PC完全対応・ダークモード単一ページクオンツ運用ダッシュボード (v9.2)
-    外部CDN障害に左右されないネイティブCanvasチャート＆レスポンシブUI内蔵
+    スマホ＆PC完全対応・ダークモード5タブクオンツ運用ダッシュボード (v9.3)
+    - 注文操作・口座残高・含み損益を排除し、「どのロジックがどのポジション（売買・Lot・価格・SL/TP）を持っているか」に特化
+    - 先行指標メーターを「何が・どのくらい・どのロジックにどう影響しているか」が直感的にわかる因果関係パネルへ刷新
+    - 日々の自己最適化と動的ATRがリアルタイム反映される「📘 ロジック仕様書（生きた設計書＆変更履歴）」タブを新設
     """
     return """<!DOCTYPE html>
 <html lang="ja">
@@ -10,7 +12,7 @@ def get_dashboard_html() -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>XAU/USD AI Quant Hedge Fund v9.2 Cockpit</title>
+<title>XAU/USD AI Quant Hedge Fund v9.3 Cockpit</title>
 <style>
   :root {
     --bg: #0b0f17;
@@ -31,13 +33,13 @@ def get_dashboard_html() -> str:
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
     font-size: 14px;
-    line-height: 1.45;
-    padding-bottom: 76px;
+    line-height: 1.5;
+    padding-bottom: 80px;
     font-variant-numeric: tabular-nums;
   }
   .topbar {
     position: sticky; top: 0; z-index: 40;
-    background: rgba(11, 15, 23, 0.92);
+    background: rgba(11, 15, 23, 0.94);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid var(--border);
     padding: 10px 14px;
@@ -49,9 +51,9 @@ def get_dashboard_html() -> str:
     padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
     background: var(--card-alt); border: 1px solid var(--border); color: var(--text);
   }
-  .badge.bull { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.4); color: #34d399; }
-  .badge.bear { background: rgba(244,63,94,0.15); border-color: rgba(244,63,94,0.4); color: #fb7185; }
-  .badge.gold { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.4); color: #fbbf24; }
+  .badge.bull { background: rgba(16,185,129,0.15); border-color: rgba(16,185,129,0.45); color: #34d399; }
+  .badge.bear { background: rgba(244,63,94,0.15); border-color: rgba(244,63,94,0.45); color: #fb7185; }
+  .badge.gold { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.45); color: #fbbf24; }
   .badge.violet { background: rgba(139,92,246,0.18); border-color: rgba(139,92,246,0.45); color: #c4b5fd; }
 
   .container { max-width: 1160px; margin: 0 auto; padding: 12px; }
@@ -68,16 +70,16 @@ def get_dashboard_html() -> str:
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 13px;
+    padding: 14px;
     margin-bottom: 12px;
   }
   .card-title {
     font-size: 13px; font-weight: 700; color: var(--muted);
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;
     margin-bottom: 10px;
   }
-  .kpi-val { font-size: 20px; font-weight: 800; margin-top: 2px; }
-  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .kpi-val { font-size: 19px; font-weight: 800; margin-top: 2px; }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
   .text-bull { color: var(--bull); }
   .text-bear { color: var(--bear); }
   .text-gold { color: var(--gold); }
@@ -92,39 +94,72 @@ def get_dashboard_html() -> str:
   .btn:active { transform: scale(0.98); }
   .btn-primary { background: var(--accent); border-color: #818cf8; color: #fff; }
   .btn-gold { background: var(--gold); border-color: #fbbf24; color: #0b0f17; }
-  .btn-bull { background: rgba(16,185,129,0.2); border-color: var(--bull); color: #34d399; }
-  .btn-bear { background: rgba(244,63,94,0.2); border-color: var(--bear); color: #fb7185; }
   .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
   .btn-block { width: 100%; }
 
-  .meter-row { margin-bottom: 9px; }
-  .meter-head { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
-  .meter-bar { height: 7px; background: #0b0f17; border-radius: 99px; overflow: hidden; border: 1px solid var(--border); }
-  .meter-fill { height: 100%; transition: width 0.3s ease; }
-
   .pos-slot {
-    background: var(--card-alt); border: 1px solid var(--border); border-radius: 10px; padding: 11px;
+    background: var(--card-alt); border: 1px solid var(--border); border-radius: 10px; padding: 12px;
   }
-  .pos-slot.active-buy { border-color: rgba(16,185,129,0.55); background: rgba(16,185,129,0.06); }
-  .pos-slot.active-sell { border-color: rgba(244,63,94,0.55); background: rgba(244,63,94,0.06); }
+  .pos-slot.active-buy { border-color: rgba(16,185,129,0.6); background: rgba(16,185,129,0.07); }
+  .pos-slot.active-sell { border-color: rgba(244,63,94,0.6); background: rgba(244,63,94,0.07); }
+
+  /* 双方向（センターゼロ）インパクトゲージ */
+  .impact-card {
+    background: var(--card-alt); border: 1px solid var(--border); border-radius: 10px;
+    padding: 11px; margin-bottom: 10px;
+  }
+  .bipolar-track {
+    position: relative; height: 10px; background: #0b0f17; border-radius: 99px;
+    border: 1px solid var(--border); overflow: hidden; margin: 6px 0;
+  }
+  .bipolar-center {
+    position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #475569; z-index: 2;
+  }
+  .bipolar-fill {
+    position: absolute; top: 0; bottom: 0; transition: all 0.3s ease;
+  }
+  .impact-explain {
+    font-size: 12px; padding: 8px 10px; border-radius: 8px;
+    background: rgba(15, 23, 42, 0.75); border-left: 3px solid var(--gold); margin-top: 6px;
+  }
+
+  /* ロジック仕様書カード */
+  .spec-box {
+    background: var(--card-alt); border: 1px solid var(--border); border-radius: 10px;
+    padding: 13px; margin-bottom: 12px;
+  }
+  .spec-header {
+    font-size: 15px; font-weight: 800; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+  }
+  .spec-list { list-style: none; font-size: 13px; }
+  .spec-list li {
+    padding: 6px 0; border-bottom: 1px dashed rgba(51,65,85,0.6);
+  }
+  .spec-list li:last-child { border-bottom: none; }
+  .live-val {
+    display: inline-block; padding: 1px 7px; border-radius: 5px;
+    background: rgba(245,158,11,0.18); border: 1px solid rgba(245,158,11,0.45);
+    color: #fbbf24; font-weight: 800; font-size: 12px;
+  }
 
   .tab-pane { display: none; }
   .tab-pane.active { display: block; }
 
   .bottom-nav {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-    background: rgba(15, 21, 33, 0.96); backdrop-filter: blur(10px);
+    background: rgba(15, 21, 33, 0.97); backdrop-filter: blur(10px);
     border-top: 1px solid var(--border);
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    padding: 6px 4px;
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    padding: 6px 2px;
   }
   .nav-btn {
     background: none; border: none; color: var(--muted);
-    display: flex; flex-direction: column; align-items: center; gap: 3px;
-    font-size: 11px; font-weight: 700; padding: 6px 2px; cursor: pointer; border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    font-size: 10px; font-weight: 700; padding: 6px 2px; cursor: pointer; border-radius: 8px;
   }
-  .nav-btn.active { color: var(--gold); background: rgba(245,158,11,0.1); }
-  .nav-icon { font-size: 17px; }
+  .nav-btn.active { color: var(--gold); background: rgba(245,158,11,0.12); }
+  .nav-icon { font-size: 16px; }
 
   .form-group { margin-bottom: 10px; }
   .form-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
@@ -171,7 +206,7 @@ def get_dashboard_html() -> str:
 <div id="toast"></div>
 
 <header class="topbar">
-  <div class="brand">⚡ XAU/USD Quant Fund <span style="font-size:11px;color:var(--muted);">v9.2</span></div>
+  <div class="brand">⚡ XAU/USD Quant Cockpit <span style="font-size:11px;color:var(--muted);">v9.3</span></div>
   <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
     <span id="badge-source" class="badge">📡 読込中...</span>
     <span id="badge-regime" class="badge violet">🎛️ REGIME</span>
@@ -181,7 +216,7 @@ def get_dashboard_html() -> str:
 </header>
 
 <main class="container">
-  <!-- 共通KPIリボン -->
+  <!-- 共通ステータス・リボン（残高・含み損益を排除し、価格・トレンド・保有ロジック・マクロ結論に特化） -->
   <div class="grid-4">
     <div class="card" style="margin-bottom:0;">
       <div class="card-title">💵 現在価格 (<span id="kpi-symbol">XAUUSD</span>)</div>
@@ -189,68 +224,78 @@ def get_dashboard_html() -> str:
       <div id="kpi-mtf" class="kpi-sub">H1: -- / M15: --</div>
     </div>
     <div class="card" style="margin-bottom:0;">
-      <div class="card-title">🏦 口座残高 / 有効証拠金</div>
-      <div id="kpi-balance" class="kpi-val">¥---,---</div>
-      <div id="kpi-broker" class="kpi-sub">Exness #---</div>
+      <div class="card-title">🎯 保有中ロジック ＆ ポジション数</div>
+      <div id="kpi-open-count" class="kpi-val">0 / 3 ポジ</div>
+      <div id="kpi-open-engines" class="kpi-sub">保有ロジック: なし</div>
     </div>
     <div class="card" style="margin-bottom:0;">
-      <div class="card-title">📈 直近24h確定損益</div>
-      <div id="kpi-today-pnl" class="kpi-val">¥0</div>
-      <div id="kpi-today-stats" class="kpi-sub">0戦 0勝0敗0BE (PF --)</div>
+      <div class="card-title">📡 先行指標の総合判定</div>
+      <div id="kpi-macro-verdict" class="kpi-val">中立 (0.00)</div>
+      <div id="kpi-macro-effect" class="kpi-sub">SMC倍率: 1.00x</div>
     </div>
     <div class="card" style="margin-bottom:0;">
-      <div class="card-title">🔥 保有中含み損益</div>
-      <div id="kpi-open-pnl" class="kpi-val">¥0</div>
-      <div id="kpi-open-count" class="kpi-sub">保有: 0 / 3 ポジション</div>
+      <div class="card-title">🎛️ 動的相場レジーム ＆ 方針</div>
+      <div id="kpi-regime-name" class="kpi-val" style="font-size:16px;">NORMAL_FLOW</div>
+      <div id="kpi-stance-name" class="kpi-sub">スタンス: BALANCED</div>
     </div>
   </div>
 
   <!-- ==================== TAB 1: LIVE COCKPIT ==================== -->
   <section id="tab-live" class="tab-pane active">
+    <!-- 1. どのロジックが今どのポジションをいくらで持っているか（読み取り専用・MT5操作方針準拠） -->
     <div class="card">
       <div class="card-title">
-        <span>🎯 3系統エンジン・ライブスロット（最大3ポジション順張りピラミッディング）</span>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-sm btn-bull" onclick="posAction('lock_be_all')">🔒 含み益を建値ロック</button>
-          <button class="btn btn-sm btn-bear" onclick="posAction('close_all')">🚨 全ポジ一括決済</button>
-        </div>
+        <span>🎯 3系統ロジック別・現在保有ポジション状況（注文・決済操作はMT5アプリ専用）</span>
+        <span id="htf-direction-badge" class="badge gold">上位足方向確認中</span>
       </div>
       <div id="live-slots" class="grid-3"></div>
     </div>
 
-    <div class="grid-2">
-      <div class="card" style="margin-bottom:0;">
-        <div class="card-title">📡 リアルタイム先行指標メーター（TradingView / MT5 M1）</div>
-        <div class="meter-row">
-          <div class="meter-head"><span>💵 ドル指数 (DXY) 3-5m Zスコア</span><strong id="m-dxy-val">0.00σ</strong></div>
-          <div class="meter-bar"><div id="m-dxy-bar" class="meter-fill" style="width:50%;background:var(--gold);"></div></div>
-        </div>
-        <div class="meter-row">
-          <div class="meter-head"><span>🏛️ 米金利 (US10Y / USDJPY) Zスコア</span><strong id="m-yield-val">0.00σ</strong></div>
-          <div class="meter-bar"><div id="m-yield-bar" class="meter-fill" style="width:50%;background:var(--accent);"></div></div>
-        </div>
-        <div class="meter-row">
-          <div class="meter-head"><span>🛢️ 原油 (USOIL) / 📈 米株 (USTEC) Z</span><strong id="m-oil-val">0.00σ / 0.00σ</strong></div>
-        </div>
-        <div class="meter-row" style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);">
-          <div class="meter-head"><span>🔥 ゴールド統合マクロバイアス (-1.0〜+1.0)</span><strong id="m-bias-val">+0.00</strong></div>
-          <div class="meter-bar"><div id="m-bias-bar" class="meter-fill" style="width:50%;background:var(--bull);"></div></div>
-        </div>
+    <!-- 2. 何が・どのくらい・何のロジックに影響しているか一目でわかる先行指標パネル -->
+    <div class="card">
+      <div class="card-title">
+        <span>📡 先行指標インパクト解剖（何が・どのくらい・どのロジックにどう影響しているか）</span>
+        <span id="macro-source-detail" class="badge">データソース確認中</span>
       </div>
 
-      <div class="card" style="margin-bottom:0;">
-        <div class="card-title">📉 直近1分足ゴールド価格 ＆ マクロバイアス推移 (SQLite DB)</div>
-        <canvas id="chart-live-m1" width="520" height="190"></canvas>
-      </div>
+      <!-- 総合結論＆3ロジックへの具体的影響バナー -->
+      <div id="macro-logic-effects" class="impact-explain" style="margin-bottom:12px;"></div>
+
+      <div class="grid-3" id="macro-indicators-cards"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:0;">
+      <div class="card-title">📉 直近1分足ゴールド価格推移 (SQLite 時系列DB)</div>
+      <canvas id="chart-live-m1" width="800" height="185"></canvas>
     </div>
   </section>
 
-  <!-- ==================== TAB 2: LAB (本格検証) ==================== -->
+  <!-- ==================== TAB 2: LOGIC SPEC (生きたロジック仕様書) ==================== -->
+  <section id="tab-spec" class="tab-pane">
+    <div class="card">
+      <div class="card-title">
+        <span>📘 現行ロジック完全仕様書（日々のAI自己最適化 ＆ 動的ATRがリアルタイム反映された実効値）</span>
+        <span id="spec-version-badge" class="badge gold">Dynamic v--</span>
+      </div>
+      <div id="spec-overview-banner" class="impact-explain" style="margin-bottom:12px;"></div>
+      <div id="spec-engines-container"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>📅 日々のロジック変更・AI自己最適化履歴タイムライン</span>
+        <span class="badge violet">自動記録ログ</span>
+      </div>
+      <div id="spec-history-list"></div>
+    </div>
+  </section>
+
+  <!-- ==================== TAB 3: LAB (本格検証) ==================== -->
   <section id="tab-lab" class="tab-pane">
     <div class="card">
       <div class="card-title">
         <span>🎛️ 「もしも（What-If）」スライダー高速バックテスト（現行 vs 変更後シミュレーション）</span>
-        <button class="btn btn-sm btn-gold" onclick="applySimParamsToLive()">✨ この検証設定を本番BOTへ即適用</button>
+        <button class="btn btn-sm btn-gold" onclick="applySimParamsToLive()">✨ この検証設定を本番ロジックへ即適用</button>
       </div>
       <div class="grid-2">
         <div>
@@ -305,31 +350,31 @@ def get_dashboard_html() -> str:
     </div>
   </section>
 
-  <!-- ==================== TAB 3: ANALYTICS (戦績) ==================== -->
+  <!-- ==================== TAB 4: ANALYTICS (戦績) ==================== -->
   <section id="tab-analytics" class="tab-pane">
     <div class="card">
-      <div class="card-title">📈 確定トレード資産推移（エクイティカーブ）</div>
+      <div class="card-title">📈 確定トレード損益推移（エクイティカーブ）</div>
       <canvas id="chart-equity" width="800" height="190"></canvas>
     </div>
 
     <div class="card">
-      <div class="card-title">⚙️ 3系統エンジン別 ＆ セッション別（東京・ロンドン・NY）パフォーマンス比較</div>
+      <div class="card-title">⚙️ 3系統エンジン別 ＆ 時間帯別（東京・ロンドン・NY）戦績比較</div>
       <div id="engine-perf-grid" class="grid-3"></div>
       <div id="session-perf-bar" style="margin-top:8px;font-size:12px;"></div>
     </div>
 
     <div class="card">
-      <div class="card-title">📜 直近トレード履歴（MT5完全突合済）</div>
+      <div class="card-title">📜 直近トレード履歴（どのロジックがいくらでエントリー・決済したか）</div>
       <div style="overflow-x:auto;">
         <table>
-          <thead><tr><th>日時</th><th>エンジン</th><th>売買/Lot</th><th>セットアップ</th><th>Entry → Close</th><th>損益(JPY)</th></tr></thead>
+          <thead><tr><th>日時</th><th>ロジック</th><th>売買/Lot</th><th>セットアップ名</th><th>約定価格 → 決済価格</th><th>SL / TP</th><th>状態/結果</th></tr></thead>
           <tbody id="trades-tbody"></tbody>
         </table>
       </div>
     </div>
   </section>
 
-  <!-- ==================== TAB 4: CONTROL & BROKER ==================== -->
+  <!-- ==================== TAB 5: CONTROL & BROKER ==================== -->
   <section id="tab-control" class="tab-pane">
     <div class="card">
       <div class="card-title">⚡ 運用スタンス（ワンタップでロジック改修方針を一括切替）</div>
@@ -337,13 +382,13 @@ def get_dashboard_html() -> str:
         <button class="stance-btn" id="st-AGGRESSIVE" onclick="setStance('AGGRESSIVE')">🔥 積極トレンド追撃<br><span style="font-size:10px;color:var(--muted);">Z閾値1.35 / 最大3ポジ</span></button>
         <button class="stance-btn" id="st-BALANCED" onclick="setStance('BALANCED')">⚖️ 標準バランス<br><span style="font-size:10px;color:var(--muted);">Z閾値1.50 / 最大3ポジ</span></button>
         <button class="stance-btn" id="st-DEFENSIVE" onclick="setStance('DEFENSIVE')">🛡️ 厳選・資金防衛<br><span style="font-size:10px;color:var(--muted);">Z閾値1.70 / 最大1ポジ</span></button>
-        <button class="stance-btn" id="st-PAUSED" onclick="setStance('PAUSED')">⏸️ 新規エントリー停止<br><span style="font-size:10px;color:var(--muted);">保有中ポジのみ管理</span></button>
+        <button class="stance-btn" id="st-PAUSED" onclick="setStance('PAUSED')">⏸️ 新規エントリー停止<br><span style="font-size:10px;color:var(--muted);">保有中ポジのみ保護</span></button>
       </div>
     </div>
 
     <div class="grid-2">
       <div class="card" style="margin-bottom:0;">
-        <div class="card-title">🎛️ 3系統エンジンON/OFF ＆ リスク・フィルター詳細設定</div>
+        <div class="card-title">🎛️ 3系統ロジックON/OFF ＆ リスク・フィルター詳細設定</div>
         <div class="toggle-row"><span>🚀 系統1：型A マクロモメンタム (FVG不要)</span><input type="checkbox" id="cfg-en-a" checked></div>
         <div class="toggle-row"><span>🎯 系統2：型B SMTダイバージェンス (FVG不要)</span><input type="checkbox" id="cfg-en-b" checked></div>
         <div class="toggle-row"><span>🏛️ 系統3：既存SMC 3トリガー (Fractal/FVG/EMA)</span><input type="checkbox" id="cfg-en-smc" checked></div>
@@ -395,7 +440,7 @@ def get_dashboard_html() -> str:
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;">
             <button class="btn btn-gold btn-block" onclick="saveControlConfig()">💾 設定・改修方針を保存 (即反映)</button>
-            <button class="btn btn-primary" style="white-space:nowrap;" onclick="triggerLabTask('daily_report')">📨 日次レポート今すぐ送信</button>
+            <button class="btn btn-primary" style="white-space:nowrap;" onclick="triggerLabTask('daily_report')">📨 日次レポート送信</button>
           </div>
         </div>
 
@@ -432,6 +477,7 @@ def get_dashboard_html() -> str:
 
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span><span>LIVE監視</span></button>
+  <button class="nav-btn" onclick="switchTab('spec', this)"><span class="nav-icon">📘</span><span>ロジック仕様</span></button>
   <button class="nav-btn" onclick="switchTab('lab', this)"><span class="nav-icon">🧪</span><span>LAB検証</span></button>
   <button class="nav-btn" onclick="switchTab('analytics', this)"><span class="nav-icon">📊</span><span>戦績分析</span></button>
   <button class="nav-btn" onclick="switchTab('control', this)"><span class="nav-icon">⚙️</span><span>制御・口座</span></button>
@@ -482,8 +528,6 @@ function switchTab(name, btn) {
   if (name === 'lab') runBacktest();
 }
 
-let lastState = null;
-
 function drawLineChart(canvasId, labels, seriesList) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
@@ -500,7 +544,7 @@ function drawLineChart(canvasId, labels, seriesList) {
   }
   let minV = Math.min(...allVals), maxV = Math.max(...allVals);
   if (maxV === minV) { maxV += 1; minV -= 1; }
-  const padL = 48, padR = 14, padT = 18, padB = 22;
+  const padL = 52, padR = 14, padT = 18, padB = 22;
   const pw = w - padL - padR, ph = h - padT - padB;
 
   ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1;
@@ -524,15 +568,29 @@ function drawLineChart(canvasId, labels, seriesList) {
     }
     ctx.stroke();
     ctx.fillStyle = s.color; ctx.font = 'bold 11px sans-serif';
-    ctx.fillText(s.label, padL + idx * 140, 13);
+    ctx.fillText(s.label, padL + idx * 145, 13);
   });
+}
+
+function bipolarBarHtml(val, maxAbs) {
+  const clamped = Math.max(-maxAbs, Math.min(maxAbs, val));
+  const pct = Math.abs(clamped) / maxAbs * 50;
+  const left = clamped >= 0 ? 50 : (50 - pct);
+  const color = clamped >= 0 ? 'var(--bull)' : 'var(--bear)';
+  return `<div class="bipolar-track">
+    <div class="bipolar-center"></div>
+    <div class="bipolar-fill" style="left:${left}%;width:${pct}%;background:${color};"></div>
+  </div>
+  <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);">
+    <span>◀ ゴールド下落要因 (SELL)</span><span>中立 (0)</span><span>ゴールド上昇要因 (BUY) ▶</span>
+  </div>`;
 }
 
 async function refreshAll() {
   try {
     const st = await apiCall('/api/state');
-    lastState = st;
     renderCockpit(st);
+    renderLogicSpec(st);
     renderShadowAndStudy(st);
     renderAnalytics(st);
     populateControls(st);
@@ -545,90 +603,311 @@ function renderCockpit(st) {
   const m = st.market || {};
   const mac = st.macro || {};
   const brk = st.broker || {};
-  const td = st.today_metrics || {};
   const positions = st.open_positions || [];
+  const spec = st.live_spec || {};
+  const ctrl = st.control_config || {};
 
+  const h1 = m.h1_trend || 'NEUTRAL';
+  const m15 = m.m15_trend || 'NEUTRAL';
   document.getElementById('kpi-symbol').textContent = brk.symbol || 'XAUUSD';
   document.getElementById('kpi-price').textContent = '$' + Number(m.current_ask || 0).toFixed(2);
-  document.getElementById('kpi-mtf').textContent = `H1: ${m.h1_trend || '--'} / M15: ${m.m15_trend || '--'} (ATR: $${Number(m.atr_m5_dollars||0).toFixed(2)})`;
+  document.getElementById('kpi-mtf').textContent = `H1: ${h1} / M15: ${m15} (M5 ATR: $${Number(m.atr_m5_dollars||0).toFixed(2)})`;
 
-  document.getElementById('kpi-balance').textContent = '¥' + Math.round(brk.balance || 0).toLocaleString();
-  document.getElementById('kpi-broker').textContent = `${brk.server || ''} #${brk.login || ''} [${brk.trade_mode || 'DEMO'}]`;
+  // 保有中ロジックKPI
+  document.getElementById('kpi-open-count').textContent = `${positions.length} / ${st.max_positions || 3} ポジ保有中`;
+  const engShort = {'MACRO_MOMENTUM': '型A(急変)', 'SMT_DIVERGENCE': '型B(SMT)', 'SMC': '系統3(SMC)'};
+  if (positions.length === 0) {
+    document.getElementById('kpi-open-engines').textContent = '現在保有中のロジックはありません';
+  } else {
+    document.getElementById('kpi-open-engines').textContent = positions.map(p => `${engShort[p.engine]||p.engine}: ${p.action} ${p.volume}L @$${p.price_open}`).join(' / ');
+  }
 
-  const tpnl = Math.round(td.total_profit || 0);
-  const elTpnl = document.getElementById('kpi-today-pnl');
-  elTpnl.textContent = (tpnl >= 0 ? '¥+' : '¥') + tpnl.toLocaleString();
-  elTpnl.className = 'kpi-val ' + (tpnl >= 0 ? 'text-bull' : 'text-bear');
-  document.getElementById('kpi-today-stats').textContent = `${td.total_count||0}戦 ${td.true_wins||0}勝 ${td.true_losses||0}敗 ${td.be_count||0}BE (PF ${td.profit_factor||1.0})`;
+  // 先行指標総合KPI
+  const bias = Number(mac.macro_bias_score || 0);
+  const elMv = document.getElementById('kpi-macro-verdict');
+  if (bias >= 0.35) {
+    elMv.textContent = `BUY優勢 (${bias >= 0 ? '+' : ''}${bias.toFixed(2)})`;
+    elMv.className = 'kpi-val text-bull';
+  } else if (bias <= -0.35) {
+    elMv.textContent = `SELL優勢 (${bias.toFixed(2)})`;
+    elMv.className = 'kpi-val text-bear';
+  } else {
+    elMv.textContent = `中立 (${bias >= 0 ? '+' : ''}${bias.toFixed(2)})`;
+    elMv.className = 'kpi-val';
+  }
+  let smcEffectTxt = 'SMCロット補正: 1.00x (通常)';
+  if (bias >= 0.70) smcEffectTxt = 'BUY 1.25x増額 / SELL 完全ブロック';
+  else if (bias >= 0.35) smcEffectTxt = 'BUY 1.25x増額 / SELL 0.75x減額';
+  else if (bias <= -0.70) smcEffectTxt = 'SELL 1.25x増額 / BUY 完全ブロック';
+  else if (bias <= -0.35) smcEffectTxt = 'SELL 1.25x増額 / BUY 0.75x減額';
+  document.getElementById('kpi-macro-effect').textContent = smcEffectTxt;
 
-  const openPnl = positions.reduce((a, p) => a + (p.profit_jpy || 0), 0);
-  const elOpnl = document.getElementById('kpi-open-pnl');
-  elOpnl.textContent = (openPnl >= 0 ? '¥+' : '¥') + Math.round(openPnl).toLocaleString();
-  elOpnl.className = 'kpi-val ' + (openPnl >= 0 ? 'text-bull' : 'text-bear');
-  document.getElementById('kpi-open-count').textContent = `保有: ${positions.length} / ${st.max_positions || 3} ポジション`;
+  const regShort = (st.active_regime || 'REGIME_NORMAL_FLOW').replace('REGIME_', '');
+  document.getElementById('kpi-regime-name').textContent = regShort;
+  document.getElementById('kpi-stance-name').textContent = `スタンス: ${ctrl.stance || 'BALANCED'} (${brk.server || 'MT5'} #${brk.login || ''})`;
 
   const src = mac.source || 'MT5_M1';
   const bSrc = document.getElementById('badge-source');
-  bSrc.textContent = src === 'TV_WEBHOOK' ? '🟢 TV_WEBHOOK 主系直結' : '🟡 MT5_M1 自律稼働';
+  bSrc.textContent = src === 'TV_WEBHOOK' ? '🟢 TV_WEBHOOK 主系直結' : '🟡 MT5_M1 副系稼働';
   bSrc.className = 'badge ' + (src === 'TV_WEBHOOK' ? 'bull' : 'gold');
-
-  document.getElementById('badge-regime').textContent = '🎛️ ' + (st.active_regime || 'REGIME_NORMAL_FLOW').replace('REGIME_', '');
+  document.getElementById('badge-regime').textContent = '🎛️ ' + regShort;
   document.getElementById('badge-spread').textContent = `Sp: ${m.spread_pips || '--'}p`;
 
-  // メーター更新
-  const dxyZ = Number(mac.dxy_z || 0);
-  const yldZ = Number(mac.yield_z || 0);
-  const bias = Number(mac.macro_bias_score || 0);
-  document.getElementById('m-dxy-val').textContent = (dxyZ >= 0 ? '+' : '') + dxyZ.toFixed(2) + 'σ';
-  document.getElementById('m-dxy-bar').style.width = Math.min(100, Math.max(5, 50 + dxyZ * 18)) + '%';
-  document.getElementById('m-yield-val').textContent = (yldZ >= 0 ? '+' : '') + yldZ.toFixed(2) + 'σ';
-  document.getElementById('m-yield-bar').style.width = Math.min(100, Math.max(5, 50 + yldZ * 18)) + '%';
-  document.getElementById('m-oil-val').textContent = `Oil: ${Number(mac.oil_z||0).toFixed(2)}σ / Equity: ${Number(mac.equity_z||0).toFixed(2)}σ`;
-  document.getElementById('m-bias-val').textContent = (bias >= 0 ? '+' : '') + bias.toFixed(2) + (bias >= 0.35 ? ' (BUY優勢)' : (bias <= -0.35 ? ' (SELL優勢)' : ' (中立)'));
-  document.getElementById('m-bias-bar').style.width = Math.min(100, Math.max(5, 50 + bias * 48)) + '%';
-  document.getElementById('m-bias-bar').style.background = bias >= 0 ? 'var(--bull)' : 'var(--bear)';
+  // 上位足トレンド方向バッジ
+  const htfBadge = document.getElementById('htf-direction-badge');
+  if (h1 === 'BULLISH') {
+    htfBadge.textContent = '📈 H1上昇トレンド：全ロジック BUY（買い）のみ許可';
+    htfBadge.className = 'badge bull';
+  } else if (h1 === 'BEARISH') {
+    htfBadge.textContent = '📉 H1下降トレンド：全ロジック SELL（売り）のみ許可';
+    htfBadge.className = 'badge bear';
+  } else {
+    htfBadge.textContent = '⚖️ H1中立レンジ：全ロジック BUY / SELL 双方向許可';
+    htfBadge.className = 'badge gold';
+  }
 
-  // 3系統スロット描画
+  // 3系統エンジンの保有ポジションカード（残高・含み損益・決済ボタン無し、どのロジックがいくら持っているか明示）
   const slotDefs = [
-    {key: 'MACRO_MOMENTUM', title: '🚀 系統1：型A マクロモメンタム', desc: 'DXY+米金利 2市場急変 (FVG不要)'},
-    {key: 'SMT_DIVERGENCE', title: '🎯 系統2：型B SMTダイバージェンス', desc: 'DXY×XAU 機関吸収検知 (FVG不要)'},
-    {key: 'SMC', title: '🏛️ 系統3：SMC テクニカル', desc: 'フラクタルスイープ / FVG / EMA20'}
+    {key: 'MACRO_MOMENTUM', title: '🚀 系統1：型A マクロモメンタム', desc: 'DXY＋米金利の2市場同時急変で発火（FVG不要）', en: ctrl.enable_type_a !== false},
+    {key: 'SMT_DIVERGENCE', title: '🎯 系統2：型B SMTダイバージェンス', desc: 'DXY高安更新×ゴールド不追随の機関吸収で発火（FVG不要）', en: ctrl.enable_type_b !== false},
+    {key: 'SMC', title: '🏛️ 系統3：SMC テクニカル', desc: 'M5フラクタルスイープ / ICT FVGリテスト / EMA20反発', en: ctrl.enable_smc !== false}
   ];
-  const slotsBox = document.getElementById('live-slots');
-  slotsBox.innerHTML = slotDefs.map(sd => {
+  document.getElementById('live-slots').innerHTML = slotDefs.map(sd => {
     const pos = positions.find(p => p.engine === sd.key);
     if (!pos) {
       return `<div class="pos-slot">
-        <div style="font-weight:700;font-size:13px;margin-bottom:4px;">${sd.title}</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${sd.desc}</div>
-        <span class="badge">⚪ シグナル待機・スキャン中</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <span style="font-weight:800;font-size:13px;">${sd.title}</span>
+          <span class="badge">${sd.en ? '⚪ ポジションなし (監視中)' : '⛔ OFF'}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);">${sd.desc}</div>
       </div>`;
     }
     const isBuy = pos.action === 'BUY';
-    const pColor = pos.profit_jpy >= 0 ? 'text-bull' : 'text-bear';
+    const slPips = Math.abs(pos.price_open - pos.sl) / 0.10;
+    const tpPips = Math.abs(pos.tp - pos.price_open) / 0.10;
     return `<div class="pos-slot ${isBuy ? 'active-buy' : 'active-sell'}">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <span style="font-weight:800;font-size:13px;">${sd.title}</span>
-        <span class="badge ${isBuy ? 'bull' : 'bear'}">${pos.action} ${pos.volume} Lot</span>
+        <span class="badge ${isBuy ? 'bull' : 'bear'}">${isBuy ? '🟢 BUY 保有中' : '🔴 SELL 保有中'}</span>
       </div>
-      <div style="font-size:18px;font-weight:800;" class="${pColor}">
-        ${pos.profit_jpy >= 0 ? '¥+' : '¥'}${pos.profit_jpy.toLocaleString()} <span style="font-size:12px;">(${pos.pips >= 0 ? '+' : ''}${pos.pips} pips)</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;background:rgba(11,15,23,0.65);padding:8px;border-radius:8px;font-size:12px;">
+        <div><span style="color:var(--muted);font-size:11px;">保有ロット数</span><br><strong style="font-size:16px;">${pos.volume} Lot</strong></div>
+        <div><span style="color:var(--muted);font-size:11px;">エントリー約定価格</span><br><strong style="font-size:16px;color:var(--gold);">$${pos.price_open.toFixed(2)}</strong></div>
+        <div><span style="color:var(--muted);font-size:11px;">ハードSL (損切値)</span><br><strong>$${pos.sl.toFixed(2)}</strong> <span style="font-size:10px;color:var(--muted);">(${slPips.toFixed(0)}p)</span></div>
+        <div><span style="color:var(--muted);font-size:11px;">ターゲットTP (利確値)</span><br><strong>$${pos.tp.toFixed(2)}</strong> <span style="font-size:10px;color:var(--muted);">(${tpPips.toFixed(0)}p)</span></div>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin:6px 0;">
-        約定: $${pos.price_open} → 現在: $${pos.price_current}<br>
-        SL: $${pos.sl} / TP: $${pos.tp} ${pos.is_be_locked ? '｜ <strong class="text-bull">🛡️建値ロック済</strong>' : ''}
+      <div style="margin-top:7px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);">
+        <span>注文番号: #${pos.ticket} (${pos.symbol})</span>
+        <span>${pos.is_be_locked ? '<strong class="text-bull">🛡️ 建値ロック完了済 (負けなし)</strong>' : '⏳ 建値移動待機中 (RR 1:1で発動)'}</span>
       </div>
-      <button class="btn btn-sm btn-bear btn-block" onclick="posAction('close_ticket', ${pos.ticket})">✖ このポジション (#${pos.ticket}) を決済</button>
     </div>`;
   }).join('');
+
+  // 先行指標の「何が・どのくらい・何に影響しているか」パネル
+  const dxyZ = Number(mac.dxy_z || 0);
+  const yldZ = Number(mac.yield_z || 0);
+  const oilZ = Number(mac.oil_z || 0);
+  const eqZ = Number(mac.equity_z || 0);
+  const geoOff = Boolean(mac.is_geopolitical_risk_off);
+  const zTh = Number(spec.effective_momentum_z_threshold || 1.50);
+  const wDxy = Number(spec.dxy_weight || 0.70);
+  const wYld = Number(spec.yield_weight || 0.30);
+
+  document.getElementById('macro-source-detail').textContent =
+    src === 'TV_WEBHOOK' ? `主系 TradingView (TVC:DXY + TVC:US10Y) ｜ 重み DXY:${Math.round(wDxy*100)}% / 金利:${Math.round(wYld*100)}%`
+                         : `副系 Exness MT5 M1 (DXY + USDJPY金利代替) ｜ 重み DXY:${Math.round(wDxy*100)}% / 金利:${Math.round(wYld*100)}%`;
+
+  // 各ロジックへの現在の具体的影響説明
+  const sameDirBear = (dxyZ < 0 && yldZ < 0);
+  const sameDirBull = (dxyZ > 0 && yldZ > 0);
+  let typeAStatus = '';
+  if (mac.momentum_signal) {
+    typeAStatus = `<strong class="text-gold">🔥 現在【${mac.momentum_signal}】発火条件クリア！</strong> (${mac.momentum_detail || ''})`;
+  } else if (sameDirBear) {
+    const needD = Math.max(0, zTh - Math.abs(dxyZ)).toFixed(2);
+    const needY = Math.max(0, zTh*0.72 - Math.abs(yldZ)).toFixed(2);
+    typeAStatus = `ドル・金利とも下落方向（ゴールドBUY向き）。発火閾値(|Z|≥${zTh.toFixed(2)}σ)まで <strong>DXYあと ${needD}σ / 金利あと ${needY}σ</strong>`;
+  } else if (sameDirBull) {
+    const needD = Math.max(0, zTh - Math.abs(dxyZ)).toFixed(2);
+    const needY = Math.max(0, zTh*0.72 - Math.abs(yldZ)).toFixed(2);
+    typeAStatus = `ドル・金利とも上昇方向（ゴールドSELL向き）。発火閾値(|Z|≥${zTh.toFixed(2)}σ)まで <strong>DXYあと ${needD}σ / 金利あと ${needY}σ</strong>`;
+  } else {
+    typeAStatus = `現在 DXY(${dxyZ>=0?'+':''}${dxyZ.toFixed(2)}σ) と 金利(${yldZ>=0?'+':''}${yldZ.toFixed(2)}σ) の方向が不一致（ねじれ）のため、<strong>型Aの飛び乗り発火を自動ロック中</strong>`;
+  }
+
+  let typeBStatus = mac.smt_signal
+    ? `<strong class="text-gold">🎯 現在【${mac.smt_signal}】SMTダイバージェンス検知！</strong> (${mac.smt_detail})`
+    : `直近35分間のDXY高安更新に対するゴールドの不追随（機関吸収）を監視中（現在異常ズレなし）`;
+
+  document.getElementById('macro-logic-effects').innerHTML = `
+    <div style="font-weight:800;margin-bottom:4px;color:var(--gold);">💡 現在の先行指標が各ロジックに与えている影響まとめ</div>
+    <div>・<strong>🚀 型A (マクロ急変) への影響:</strong> ${typeAStatus}</div>
+    <div>・<strong>🎯 型B (SMT吸収) への影響:</strong> ${typeBStatus}</div>
+    <div>・<strong>🏛️ 系統3 (SMC) への影響:</strong> 統合バイアス <strong>${bias>=0?'+':''}${bias.toFixed(2)}</strong> に基づき、<strong>${smcEffectTxt}</strong>（閾値: ±0.35でロット増減、±0.70で逆行ブロック）</div>
+  `;
+
+  // 3枚の個別指標因果カード（逆相関のため -Z がゴールド上昇要因）
+  const dxyGoldEffect = -dxyZ;
+  const yldGoldEffect = -yldZ;
+  const dxyContrib = (-wDxy * dxyZ / 2.0);
+  const yldContrib = (-wYld * yldZ / 2.0);
+
+  document.getElementById('macro-indicators-cards').innerHTML = `
+    <div class="impact-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong>💵 ① ドル指数 (DXY)</strong>
+        <span class="badge gold">影響ウェイト: ${Math.round(wDxy*100)}%</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px;">
+        現在値: <strong>Z = ${dxyZ>=0?'+':''}${dxyZ.toFixed(2)}σ</strong> (${dxyZ > 0.3 ? 'ドル買い進行' : (dxyZ < -0.3 ? 'ドル売り進行' : '横ばい')})
+      </div>
+      ${bipolarBarHtml(dxyGoldEffect, 3.0)}
+      <div style="font-size:11px;margin-top:6px;">
+        ・<strong>ゴールドへの作用:</strong> <strong class="${dxyGoldEffect>=0?'text-bull':'text-bear'}">${dxyGoldEffect>=0?'▲ 上昇追い風 (BUY要因)':'▼ 下落圧力 (SELL要因)'}</strong> (バイアス寄与: ${dxyContrib>=0?'+':''}${dxyContrib.toFixed(2)})<br>
+        ・<strong>型A発火基準 (|Z|≥${zTh.toFixed(2)}σ):</strong> ${Math.abs(dxyZ)>=zTh ? '<strong class="text-bull">✅ 基準クリア</strong>' : `未達 (現在 ${Math.abs(dxyZ).toFixed(2)}σ / 基準の ${Math.min(100, Math.round(Math.abs(dxyZ)/zTh*100))}%)`}
+      </div>
+    </div>
+
+    <div class="impact-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong>🏛️ ② 米金利 (${src==='TV_WEBHOOK'?'US10Y/02Y':'USDJPY代替'})</strong>
+        <span class="badge gold">影響ウェイト: ${Math.round(wYld*100)}%</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px;">
+        現在値: <strong>Z = ${yldZ>=0?'+':''}${yldZ.toFixed(2)}σ</strong> (${yldZ > 0.3 ? '金利上昇' : (yldZ < -0.3 ? '金利低下' : '横ばい')})
+      </div>
+      ${bipolarBarHtml(yldGoldEffect, 3.0)}
+      <div style="font-size:11px;margin-top:6px;">
+        ・<strong>ゴールドへの作用:</strong> <strong class="${yldGoldEffect>=0?'text-bull':'text-bear'}">${yldGoldEffect>=0?'▲ 金利低下でBUY追い風':'▼ 金利上昇でSELL圧力'}</strong> (バイアス寄与: ${yldContrib>=0?'+':''}${yldContrib.toFixed(2)})<br>
+        ・<strong>型Aコンフルエンス基準:</strong> DXYと同方向に <strong>|Z|≥${(zTh*0.72).toFixed(2)}σ</strong> で2市場一致成立 (${Math.abs(yldZ)>=zTh*0.72 ? '<strong class="text-bull">✅ 到達</strong>' : '待機中'})
+      </div>
+    </div>
+
+    <div class="impact-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <strong>🛢️ ③ 原油 (USOIL) × 📈 米株 (USTEC)</strong>
+        <span class="badge violet">地政学リスクオフ判定器</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px;">
+        原油 Z = <strong>${oilZ>=0?'+':''}${oilZ.toFixed(2)}σ</strong> ／ 米株 Z = <strong>${eqZ>=0?'+':''}${eqZ.toFixed(2)}σ</strong>
+      </div>
+      ${bipolarBarHtml(geoOff ? 2.0 : (oilZ > 0.8 && yldZ > 0.5 ? -1.5 : 0.0), 3.0)}
+      <div style="font-size:11px;margin-top:6px;">
+        ・<strong>発火条件:</strong> <code>原油Z≥+1.2σ</code> かつ <code>米株Z≤-0.8σ</code> かつ <code>金利Z≤-0.8σ</code><br>
+        ・<strong>現在の判定:</strong> ${geoOff
+          ? '<strong class="text-bull">🚨 地政学リスクオフ発動中！ゴールドBUYバイアスを +0.30 ブースト</strong>'
+          : (oilZ > 0.8 && yldZ > 0.5
+              ? '<strong class="text-bear">⚠️ 原油高＋金利高＝「インフレ型原油高」のためゴールド買いブーストを自動ブロック中</strong>'
+              : '⚪ 通常状態（地政学ショックなし・補正 0.00）')}
+      </div>
+    </div>
+  `;
 
   // M1ライブチャート
   const m1Series = st.m1_series || [];
   if (m1Series.length > 1) {
     drawLineChart('chart-live-m1', m1Series.map(r => r.time_str.slice(11,16)), [
-      {label: 'XAUUSD 価格 ($)', color: '#f59e0b', data: m1Series.map(r => Number(r.xau_close))}
+      {label: 'XAUUSD 1分足価格 ($)', color: '#f59e0b', data: m1Series.map(r => Number(r.xau_close))}
     ]);
   }
+}
+
+function renderLogicSpec(st) {
+  const m = st.market || {};
+  const spec = st.live_spec || {};
+  const dp = st.dynamic_params || {};
+  const ctrl = st.control_config || {};
+  const atr = Number(m.atr_m5_dollars || 2.0);
+  const h1 = m.h1_trend || 'NEUTRAL';
+
+  document.getElementById('spec-version-badge').textContent = `最適化 Version ${dp.version || 7} (最終更新: ${dp.last_updated || '--'})`;
+
+  document.getElementById('spec-overview-banner').innerHTML = `
+    <div style="font-weight:800;color:var(--gold);margin-bottom:4px;">🧭 現在適用中のグローバル原則（リアルタイム動的計算値）</div>
+    <div>・<strong>上位足トレンドフォロー原則:</strong> 現在 H1 = <span class="live-val">${h1}</span> のため、<strong>${h1==='BULLISH'?'全ロジック BUY（買い）のみエントリー許可':(h1==='BEARISH'?'全ロジック SELL（売り）のみエントリー許可':'H1中立につき BUY / SELL 双方向許可')}</strong></div>
+    <div>・<strong>現在稼働レジーム:</strong> <span class="live-val">${st.active_regime || 'REGIME_NORMAL_FLOW'}</span> ｜ <strong>M5 ATR(14):</strong> <span class="live-val">$${atr.toFixed(2)} (${(atr/0.10).toFixed(1)} pips)</span> ｜ <strong>動的許容SL範囲:</strong> <span class="live-val">${spec.effective_min_sl_pips || 18} 〜 ${spec.effective_max_sl_pips || 55} pips</span></div>
+    <div>・<strong>ポジション＆リスク管理:</strong> 3系統それぞれ最大1ポジ（全体最大 <span class="live-val">${ctrl.max_concurrent_positions || 3}ポジ</span> 順張りピラミッディング）、1トレード基本リスク <span class="live-val">${ctrl.risk_per_trade_percent || 1.5}%</span>（先行建玉が建値移動前なら追加ポジは <span class="live-val">0.80倍</span>、建値移動済なら <span class="live-val">1.00倍</span>）</div>
+  `;
+
+  const zTh = Number(spec.effective_momentum_z_threshold || 1.50);
+  const mSlMult = Number(spec.effective_macro_sl_atr_mult || 1.70);
+  const mSlPips = (atr * mSlMult / 0.10).toFixed(1);
+  const mRr = Number(spec.effective_macro_min_rr || 1.80);
+  const smtRr = Number(spec.effective_smt_min_rr || 2.00);
+  const smtDivDollars = Math.max(0.25, atr * 0.12).toFixed(2);
+  const chaseLimitDollars = Math.max(1.5, atr * 1.5).toFixed(2);
+
+  const smcRr = Number(spec.effective_smc_min_rr || 1.50);
+  const wickTh = Number(spec.effective_wick_ratio || 0.25);
+  const fvgGap = Number(spec.effective_min_fvg_gap || 0.40).toFixed(2);
+  const atrSlMult = Number(spec.effective_atr_sl_mult || 1.30);
+
+  document.getElementById('spec-engines-container').innerHTML = `
+    <div class="spec-box">
+      <div class="spec-header">
+        <span>🚀 系統1：型A コンフルエンス・マクロモメンタム（指標発信・FVG不要）</span>
+        <span class="badge ${ctrl.enable_type_a!==false?'bull':'bear'}">${ctrl.enable_type_a!==false?'稼働中 (ON)':'停止中 (OFF)'}</span>
+      </div>
+      <ul class="spec-list">
+        <li><strong>🎯 ロジックの狙い:</strong> 経済指標やNY市場オープンでドルと米金利が同時に急変し、FVG（押し目）を作らず一気に走るトレンド相場の第2波（ショック後5〜15分の本流）を捕捉します。</li>
+        <li><strong>① 2市場同時コンフルエンス条件:</strong> <code>DXY</code> と <code>米金利(US10Y / USDJPY)</code> の3〜5分Zスコアが<strong>同方向</strong>であり、片方が <span class="live-val">|Z| ≥ ${zTh.toFixed(2)}σ</span>（ベース値 ${Number(dp.momentum_z_threshold||1.5).toFixed(2)}σ）かつ他方も <span class="live-val">|Z| ≥ ${(zTh*0.72).toFixed(2)}σ</span> を同時に満たすこと（ユーロ単体ノイズを完全排除）。</li>
+        <li><strong>② 初動往復ビンタ回避クールダウン:</strong> <code>|Z| ≥ 2.40σ</code> の極端な指標スパイク時は、初検知から <span class="live-val">45秒 〜 240秒</span> 待機して上下ヒゲとスプレッド拡大の収束を待ちます。</li>
+        <li><strong>③ ゴールド追随 ＆ 飛び乗り防止 (Max Chase Guard):</strong> XAUUSD自身がM1 EMA9の順方向で推移しており、かつ直近3分間で既に <span class="live-val">M5 ATR × 1.5倍 ($${chaseLimitDollars})</span> 以上飛んでいる場合は天井掴みを防ぐため見送ります。</li>
+        <li><strong>④ 動的SL / TP / ロット設定:</strong> SL幅 ＝ <span class="live-val">M5 ATR × ${mSlMult.toFixed(2)}倍 (現在約 ${mSlPips} pips)</span> ｜ TP目標 ＝ <span class="live-val">RR 1 : ${mRr.toFixed(2)}</span>（H1+M15完全一致時は <span class="live-val">RR 1 : 2.20</span>）｜ H1順張り一致時はロット <span class="live-val">1.15倍</span>。</li>
+      </ul>
+    </div>
+
+    <div class="spec-box">
+      <div class="spec-header">
+        <span>🎯 系統2：型B SMTダイバージェンス（機関投資家の吸収検知・FVG不要）</span>
+        <span class="badge ${ctrl.enable_type_b!==false?'bull':'bear'}">${ctrl.enable_type_b!==false?'稼働中 (ON)':'停止中 (OFF)'}</span>
+      </div>
+      <ul class="spec-list">
+        <li><strong>🎯 ロジックの狙い:</strong> 「ドル指数(DXY)が高値を更新したのに、ゴールドが安値を割らない（＝裏で大口・中央銀行が巨大な買い板で吸収している）」という機関投資家の痕跡を検知し、DXY失速初動でFVGを待たずに押し目・戻り目を狙い撃ちます。</li>
+        <li><strong>① 35分間M1同期スイング比較:</strong> 確定M1足 <span class="live-val">35本</span> を「基準スイング（9〜35分前）」と「直近スイープ帯（直近8分間）」に分割してタイムスタンプ完全同期で比較。</li>
+        <li><strong>② ダイバージェンス＆反転確定条件:</strong> BUYの場合、DXYが基準高値を上抜いたにもかかわらず、XAUUSDの直近8分安値が基準安値より <span class="live-val">$${smtDivDollars} (M5 ATR×0.12)</span> 以上高く維持され、直前M1確定足でDXYが失速（陰線または上ヒゲ30%以上）＋XAUUSDが陽線かつM1 EMA9上抜けで即発火。</li>
+        <li><strong>③ 動的SL / TP設定:</strong> SL ＝ 直近8分スイープ安値/高値 ± <code>M5 ATR × 0.40</code>（最低 <span class="live-val">${spec.effective_min_sl_pips || 18} pips</span> 保証）｜ TP目標 ＝ <span class="live-val">RR 1 : ${smtRr.toFixed(2)}</span>。</li>
+      </ul>
+    </div>
+
+    <div class="spec-box">
+      <div class="spec-header">
+        <span>🏛️ 系統3：SMC テクニカル 3大トリガー ＋ 先行指標オーバーレイ</span>
+        <span class="badge ${ctrl.enable_smc!==false?'bull':'bear'}">${ctrl.enable_smc!==false?'稼働中 (ON)':'停止中 (OFF)'}</span>
+      </div>
+      <ul class="spec-list">
+        <li><strong>① フラクタル流動性スイープ:</strong> M5足の左右2本ピボット高安・アジア高安・前日高安(PDH/PDL)をヒゲで抜いて実体で押し戻されたストップ狩り（現在のヒゲ比率閾値: <span class="live-val">${wickTh.toFixed(2)}</span>、2本合成ピンバー対応）。</li>
+        <li><strong>② ICT Fair Value Gap (FVG) リテスト:</strong> 3本ローソク足で作られた未埋め価格空白（現在の最小ギャップ閾値: <span class="live-val">$${fvgGap}</span>）へのプルバック反発。</li>
+        <li><strong>③ トレンドモメンタム EMA20 反発:</strong> M5足で <code>EMA20 > EMA50</code>（または <code>EMA20 < EMA50</code>）推進中のEMA20タッチ＆反発確定足。</li>
+        <li><strong>④ 先行指標オーバーレイ（機会温存＆ブースト）:</strong> SL倍率 <span class="live-val">ATR × ${atrSlMult.toFixed(2)}</span>、基本目標RR <span class="live-val">1 : ${smcRr.toFixed(2)}</span> に対し、先行指標バイアスが順行（<code>≥ +0.35</code>）なら<strong>ロット <span class="live-val">1.25倍</span> ＆ TP <span class="live-val">+15%拡張</span></strong>、微逆行（<code>-0.35〜-0.70</code>）なら見送らず<strong>ロット <span class="live-val">0.75倍</span> で機会温存</strong>、極端逆行（<code>≤ -0.70</code>）のみ<strong>ハードガードでブロック</strong>。</li>
+      </ul>
+    </div>
+
+    <div class="spec-box" style="margin-bottom:0;">
+      <div class="spec-header">
+        <span>🛡️ 共通イグジット・利益防衛 ＆ 自滅防止ルール</span>
+        <span class="badge bull">常時有効</span>
+      </div>
+      <ul class="spec-list">
+        <li><strong>① プロップ流・建値自動移動 (Break-Even):</strong> 各ポジションの含み益が<strong>初期SL幅と同等（RR 1:1以上、かつ最低25pips）</strong>に到達した瞬間、ブローカー側ハードSLを <span class="live-val">建値 + 2.0 pips</span> へ自動引き上げ（「負けゼロ」のフリーロール化）。</li>
+        <li><strong>② マクロ反転トレーリング利確:</strong> 含み益が <span class="live-val">M5 ATR × 1.1 (現在約 ${(atr*1.1/0.10).toFixed(1)} pips)</span> 以上乗った状態で、DXYと米金利がM5 EMA20を逆方向へ明確に割り込んだ場合、SLを <span class="live-val">現在価格 ± M5 ATR × 0.6</span> に引き上げて利益を確実に防衛。</li>
+        <li><strong>③ 同方向SL連敗防止クールダウン:</strong> 損切り（SL）被弾後、同じ方向への新規エントリーを <span class="live-val">${ctrl.sl_cooldown_minutes || 15}分間</span> 自動ロックし、急変動時の連続被弾を防止。</li>
+      </ul>
+    </div>
+  `;
+
+  // 日々のロジック変更履歴タイムライン
+  const hist = st.optimization_history || [];
+  document.getElementById('spec-history-list').innerHTML = hist.map(h => `
+    <div class="pos-slot" style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+        <strong style="color:var(--gold);">${h.title || h.date}</strong>
+        <span class="badge">${h.badge || '自動適用済'}</span>
+      </div>
+      <div style="font-size:12px;color:var(--text);white-space:pre-line;">${h.detail || ''}</div>
+    </div>
+  `).join('') || `<div style="font-size:12px;color:var(--muted);">履歴データ読込中...</div>`;
 }
 
 function renderShadowAndStudy(st) {
@@ -665,7 +944,6 @@ function renderShadowAndStudy(st) {
     </tr>`;
   }).join('') || `<tr><td colspan="6" style="color:var(--muted);">記録待ち...</td></tr>`;
 
-  // 週末研究室データ
   const ws = st.weekend_study || {};
   const corrs = ws.correlations_15m || {};
   const wts = ws.recommended_weights || {};
@@ -697,24 +975,24 @@ function renderAnalytics(st) {
     return `<span class="badge">${s.label}: ${s.wins}勝${s.losses}敗 (¥${pnl>=0?'+':''}${pnl.toLocaleString()})</span>`;
   }).join(' ');
 
-  // 資産推移チャート
   let cum = 0;
   const eqCurve = [0];
   const closedAsc = [...trades].reverse().filter(t => t.profit !== null);
   closedAsc.forEach(t => { cum += Number(t.profit || 0); eqCurve.push(cum); });
   drawLineChart('chart-equity', eqCurve.map((_,i)=>String(i)), [
-    {label: '累計確定損益 (JPY)', color: '#10b981', data: eqCurve}
+    {label: '確定損益推移 (JPY)', color: '#10b981', data: eqCurve}
   ]);
 
   document.getElementById('trades-tbody').innerHTML = trades.slice(0, 25).map(t => {
     const p = t.profit !== null ? Math.round(Number(t.profit)) : null;
-    const pTxt = p === null ? '<span class="badge gold">OPEN</span>' : `<strong class="${p >= 0 ? 'text-bull' : 'text-bear'}">${p >= 0 ? '¥+' : '¥'}${p.toLocaleString()}</strong>`;
+    const pTxt = p === null ? '<span class="badge gold">保有中 (OPEN)</span>' : `<strong class="${p >= 0 ? 'text-bull' : 'text-bear'}">${p >= 0 ? '¥+' : '¥'}${p.toLocaleString()}</strong>`;
     return `<tr>
       <td>${(t.time||'').slice(5,16)}</td>
       <td><span class="badge">${t.entry_engine || 'SMC'}</span></td>
       <td><strong>${t.action}</strong> (${t.volume}L)</td>
       <td>${t.setup_name || ''}</td>
-      <td>$${Number(t.price||0).toFixed(1)} → ${t.close_price ? '$'+Number(t.close_price).toFixed(1) : '--'}</td>
+      <td>$${Number(t.price||0).toFixed(2)} → ${t.close_price ? '$'+Number(t.close_price).toFixed(2) : '--'}</td>
+      <td>SL:$${Number(t.sl||0).toFixed(1)} / TP:$${Number(t.tp||0).toFixed(1)}</td>
       <td>${pTxt}</td>
     </tr>`;
   }).join('');
@@ -797,7 +1075,7 @@ async function applySimParamsToLive() {
     max_concurrent_positions: Number(document.getElementById('sim-pos').value),
   };
   const r = await apiCall('/api/control/params', 'POST', payload);
-  showToast(r.message || 'シミュレーション設定を本番BOTへ適用しました！');
+  showToast(r.message || 'シミュレーション設定を本番ロジックへ適用しました！');
   refreshAll();
 }
 
@@ -829,13 +1107,6 @@ async function saveControlConfig() {
   };
   const r = await apiCall('/api/control/params', 'POST', payload);
   showToast(r.message || '設定と改修方針を保存しました（15秒以内に即反映）');
-  refreshAll();
-}
-
-async function posAction(action, ticket=null) {
-  if (action === 'close_all' && !confirm('保有中の全ポジションを今すぐ成行決済しますか？')) return;
-  const r = await apiCall('/api/control/position', 'POST', {action, ticket});
-  showToast(r.message || 'ポジション操作を実行しました', !r.success);
   refreshAll();
 }
 

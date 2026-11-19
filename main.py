@@ -113,6 +113,60 @@ def run_trading_daemon():
             week_m = review_engine._compute_metrics_block(review_engine._filter_trades_since_hours(24 * 7))
             recent_trades = list(reversed(review_engine._load_journal()[-30:]))
 
+            # ライブ適用中の仕様値（M5 ATR連動の実効値＋レジーム適応後の実効値）を算出
+            atr_d = float(mkt_snap.get("atr_m5_dollars") or 2.0)
+            _, adapted_now = review_engine.optimizer.classify_and_adapt_regime(
+                base_params=dyn_params,
+                market_state=mkt_snap,
+                macro_state=mac_snap,
+            )
+            w_study = weekend_lab.load_latest_study()
+            rec_w = w_study.get("recommended_weights") or {}
+            live_spec = {
+                "effective_min_sl_pips": max(18.0, round((atr_d * 1.0) / 0.10, 1)),
+                "effective_max_sl_pips": max(50.0, round((atr_d * 3.5) / 0.10, 1)),
+                "effective_min_fvg_gap": max(0.40, round(atr_d * 0.30, 2)),
+                "effective_momentum_z_threshold": adapted_now.get("momentum_z_threshold", 1.50),
+                "effective_macro_sl_atr_mult": adapted_now.get("macro_sl_atr_multiplier", 1.70),
+                "effective_macro_min_rr": adapted_now.get("macro_min_rr", 1.80),
+                "effective_smt_min_rr": adapted_now.get("smt_min_rr", 2.00),
+                "effective_smc_min_rr": adapted_now.get("min_risk_reward_ratio", 1.50),
+                "effective_wick_ratio": adapted_now.get("wick_ratio_threshold", 0.25),
+                "effective_atr_sl_mult": adapted_now.get("atr_sl_multiplier", 1.30),
+                "dxy_weight": rec_w.get("dxy_weight", 0.70),
+                "yield_weight": rec_w.get("yield_weight", 0.30),
+            }
+
+            # 日々のロジック変更＆自己最適化履歴の抽出
+            opt_history = []
+            try:
+                raw_dp_path = review_engine.optimizer.params_file
+                if raw_dp_path.exists():
+                    raw_dp = json.loads(raw_dp_path.read_text(encoding="utf-8"))
+                    opt_history.append({
+                        "title": f"🎛️ 動的パラメータ最適化 v{raw_dp.get('version', 1)} ({raw_dp.get('last_updated', '')})",
+                        "badge": f"Regime: {reg_snap.replace('REGIME_', '')}",
+                        "detail": (
+                            f"変更根拠: {raw_dp.get('reason', '日次自動較正')}\n"
+                            f"現在ベース値: 型A_Z閾値={dyn_params.get('momentum_z_threshold')}σ / 型A_RR=1:{dyn_params.get('macro_min_rr')} / "
+                            f"型B_RR=1:{dyn_params.get('smt_min_rr')} / SMC_RR=1:{dyn_params.get('min_risk_reward_ratio')} / "
+                            f"ヒゲ比率={dyn_params.get('wick_ratio_threshold')} / FVG最小ギャップ=${dyn_params.get('min_fvg_gap_dollars')} / ATR倍率={dyn_params.get('atr_sl_multiplier')}"
+                        ),
+                    })
+                cl_file = settings.BASE_DIR / "CHANGELOG.md"
+                if cl_file.exists():
+                    cl_txt = cl_file.read_text(encoding="utf-8")
+                    for sec in cl_txt.split("\n## ")[1:6]:
+                        lines = [ln.strip() for ln in sec.strip().splitlines() if ln.strip() and ln.strip() != "---"]
+                        if lines:
+                            opt_history.append({
+                                "title": f"📌 {lines[0]}",
+                                "badge": "Git履歴記録済",
+                                "detail": "\n".join(lines[1:8]),
+                            })
+            except Exception:
+                pass
+
             return {
                 "market": mkt_snap,
                 "macro": mac_snap,
@@ -120,11 +174,13 @@ def run_trading_daemon():
                 "open_positions": pos_snap,
                 "active_regime": reg_snap,
                 "max_positions": risk_manager.max_positions,
+                "live_spec": live_spec,
+                "optimization_history": opt_history,
                 "today_metrics": today_m,
                 "weekly_metrics": week_m,
                 "recent_trades": recent_trades,
                 "shadow_scorecard": quant_db.get_shadow_scorecard(days=7),
-                "weekend_study": weekend_lab.load_latest_study(),
+                "weekend_study": w_study,
                 "m1_series": quant_db.get_recent_macro_series(limit=90),
                 "dynamic_params": dyn_params,
                 "control_config": {
