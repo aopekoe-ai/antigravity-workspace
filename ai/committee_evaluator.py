@@ -64,6 +64,9 @@ class AICommitteeEvaluator:
         pdh = market_state.get("pdh")
         pdl = market_state.get("pdl")
         now_jst = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+        h1_trend = market_state.get("h1_trend", "NEUTRAL")
+        h1_ema20 = market_state.get("h1_ema20", 0.0)
+        h1_ema50 = market_state.get("h1_ema50", 0.0)
 
         if not self.available:
             return self._build_fallback(signal, current_ask, spread_pips)

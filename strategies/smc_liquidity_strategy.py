@@ -182,6 +182,8 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
                         tp_pips = round(sl_pips * self.min_rr, 1)
                         tp_price = current_bid - (tp_pips * pip_size)
                         rr = round(tp_pips / sl_pips, 2)
+                        if h1_trend == "BULLISH":
+                            continue  # H1強気上昇トレンド中の逆張り売りは除外してトレンド追随優先
                         return TradeSignal(
                             action="SELL",
                             confidence=0.88,
@@ -215,6 +217,8 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
                         tp_pips = round(sl_pips * self.min_rr, 1)
                         tp_price = current_ask + (tp_pips * pip_size)
                         rr = round(tp_pips / sl_pips, 2)
+                        if h1_trend == "BEARISH":
+                            continue  # H1強気下降トレンド中の逆張り買いは除外してトレンド追随優先
                         return TradeSignal(
                             action="BUY",
                             confidence=0.88,
@@ -286,7 +290,7 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
             ema50 = float(df_m5['close'].ewm(span=50, adjust=False).mean().iloc[-2])
 
             # 上昇トレンド（EMA20 > EMA50）でのEMA20押し目買い
-            if ema20 > ema50 and (c1['low'] <= ema20 * 1.0006) and (c1['close'] > ema20) and (c1['close'] >= c1['open']):
+            if ema20 > ema50 and h1_trend != "BEARISH" and (c1['low'] <= ema20 * 1.0006) and (c1['close'] > ema20) and (c1['close'] >= c1['open']):
                 sl_price = min(c1['low'], ema50) - (atr_dollars * 0.3)
                 sl_pips = round((current_ask - sl_price) / pip_size, 1)
                 if self.min_sl_pips <= sl_pips <= self.max_sl_pips:
@@ -308,7 +312,7 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
                     )
 
             # 下降トレンド（EMA20 < EMA50）でのEMA20戻り売り
-            if ema20 < ema50 and (c1['high'] >= ema20 * 0.9994) and (c1['close'] < ema20) and (c1['close'] <= c1['open']):
+            if ema20 < ema50 and h1_trend != "BULLISH" and (c1['high'] >= ema20 * 0.9994) and (c1['close'] < ema20) and (c1['close'] <= c1['open']):
                 sl_price = max(c1['high'], ema50) + (atr_dollars * 0.3)
                 sl_pips = round((sl_price - current_bid) / pip_size, 1)
                 if self.min_sl_pips <= sl_pips <= self.max_sl_pips:

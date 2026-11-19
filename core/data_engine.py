@@ -73,6 +73,23 @@ class MarketDataEngine:
                 asia_high = float(asia_candles['high'].max())
                 asia_low = float(asia_candles['low'].min())
 
+
+        # H1 マルチタイムフレーム（MTF）トレンド判定
+        h1_trend = "NEUTRAL"
+        h1_ema20 = 0.0
+        h1_ema50 = 0.0
+        if df_h1 is not None and len(df_h1) >= 50:
+            s_ema20 = df_h1['close'].ewm(span=20, adjust=False).mean()
+            s_ema50 = df_h1['close'].ewm(span=50, adjust=False).mean()
+            h1_ema20 = float(s_ema20.iloc[-2])
+            h1_ema50 = float(s_ema50.iloc[-2])
+            prev_ema20 = float(s_ema20.iloc[-3])
+            
+            if h1_ema20 > h1_ema50 and h1_ema20 >= prev_ema20:
+                h1_trend = "BULLISH"
+            elif h1_ema20 < h1_ema50 and h1_ema20 <= prev_ema20:
+                h1_trend = "BEARISH"
+
         # 前日高値・前日安値（PDH / PDL）
         pdh = float(df_d1['high'].iloc[-2]) if df_d1 is not None and len(df_d1) >= 2 else None
         pdl = float(df_d1['low'].iloc[-2]) if df_d1 is not None and len(df_d1) >= 2 else None
@@ -91,6 +108,9 @@ class MarketDataEngine:
             "atr_m15_dollars": atr_m15,
             "asia_high": asia_high,
             "asia_low": asia_low,
+            "h1_trend": h1_trend,
+            "h1_ema20": h1_ema20,
+            "h1_ema50": h1_ema50,
             "pdh": pdh,
             "pdl": pdl,
             "df_m5": df_m5,
