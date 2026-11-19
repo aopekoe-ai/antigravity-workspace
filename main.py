@@ -34,14 +34,13 @@ def is_weekend_market_closed(now_utc: datetime.datetime) -> bool:
 
 def run_trading_daemon():
     """
-    【VPS常駐型】24時間リアルタイム・クオンツ取引エンジン v9.0 (Step 1〜3 ＋ 週末自動検証研究室 完全統合版)
-    - Step 1: RR 1:1 建値移動・M5 ATR動的スケーリング・同方向連続SLループ防止
-    - Step 2: 3系統ハイブリッド（SMC + 型Aマクロモメンタム + 型B SMT）・TV Webhook主系 + MT5 M1自動フェイルオーバー
-    - Step 3: 先行指標レジーム連動リアルタイム自己最適化・MT5決済履歴完全同期・長期ログローテーション保全
-    - 週末研究室: 土日の全市場休場中はトレードDiscord通知を完全停止し、相関・複合条件・リードラグ自動検証を実行
+    【VPS常駐型】24時間リアルタイム・クオンツ取引エンジン v9.1
+    - 3系統ロジック別1ポジション（最大3ポジション）順張りピラミッディング対応
+    - 6ブロック構成ヘッジファンド日次運用ブリーフィング（毎朝06:00 JST）
+    - 週末クオンツ自動検証研究室 ＆ 土曜08:00 JST 検証結果Discord通知（休場中の毎時通知は完全停止）
     """
     print("==================================================================")
-    print("🤖 Institutional SMC + Macro Hybrid Trading System v9.0 Starting...")
+    print("🤖 Institutional SMC + Macro Hybrid Trading System v9.1 Starting...")
     print("==================================================================")
 
     # 1. パラメータの初期ロード
@@ -92,8 +91,8 @@ def run_trading_daemon():
     if not weekend_lab.study_file.exists():
         weekend_lab.run_weekend_study()
 
-    print(f"[SYSTEM READY] 対象銘柄: {symbol}, 戦略: {strategy.name}")
-    print("[SYSTEM READY] 3系統ハイブリッド ＋ レジーム連動自己最適化 ＋ 週末自動検証ラボ 稼働開始...")
+    print(f"[SYSTEM READY] 対象銘柄: {symbol}, 戦略: {strategy.name} (最大同時保有: {risk_manager.max_positions}ポジ/3系統)")
+    print("[SYSTEM READY] 3系統ピラミッディング ＋ レジーム連動自己最適化 ＋ 週末検証ラボ 稼働開始...")
 
     last_hourly_report_hour = -1
     last_daily_review_day = -1
@@ -115,16 +114,18 @@ def run_trading_daemon():
             now_utc = datetime.datetime.now(datetime.timezone.utc)
             now_jst = now_utc.astimezone(JST)
 
-            # --- 0. 土日の全市場休場ガード ＆ 週末クオンツ自動検証研究室 ---
+            # --- 0. 土日の全市場休場ガード ＆ 週末クオンツ自動検証研究室（土曜08:00 JST Discord配信） ---
             if is_weekend_market_closed(now_utc):
                 if not was_weekend_closed:
-                    print(f"🌙 [WEEKEND MARKET CLOSED] 全市場休場モードへ移行 ({now_jst.strftime('%Y-%m-%d %H:%M JST')})。土日のDiscord定時通知を停止します。")
+                    print(f"🌙 [WEEKEND MARKET CLOSED] 全市場休場モードへ移行 ({now_jst.strftime('%Y-%m-%d %H:%M JST')})。土日の毎時トレード通知を停止します。")
                     was_weekend_closed = True
 
-                # 土曜朝（JST 08:00以降）に週1回の相関・複合条件・リードラグ自動検証を実行
+                # 土曜朝（JST 08:00以降）に週1回の相関・複合条件・リードラグ自動検証を実行しDiscordへ配信
                 today_jst_str = now_jst.strftime("%Y-%m-%d")
                 if now_jst.weekday() == 5 and now_jst.hour >= 8 and last_weekend_study_date != today_jst_str:
-                    weekend_lab.run_weekend_study()
+                    study_res = weekend_lab.run_weekend_study()
+                    weekly_stats = review_engine.get_weekly_summary()
+                    discord_mgr.send_weekend_research_report(study_res, weekly_stats)
                     review_engine.log_maintainer.run_maintenance()
                     last_weekend_study_date = today_jst_str
 
@@ -135,12 +136,13 @@ def run_trading_daemon():
                     print(f"🌅 [MARKET REOPENED] 週明け市場オープン検知 ({now_jst.strftime('%Y-%m-%d %H:%M JST')})。通常スキャンを再開します。")
                     was_weekend_closed = False
 
-            # パラメータ動的リロード（相場急変時にファイルを編集すれば即反映）
+            # パラメータ動的リロード
             params = settings.load_strategy_params()
             exec_filters = params.get("execution_filters", {})
             max_spread = exec_filters.get("max_allowed_spread_pips", 3.0)
             strategy.sessions_config = exec_filters.get("allowed_sessions_jst", strategy.sessions_config)
             ai_guard.cache_ttl_minutes = params.get("ai_guard", {}).get("cache_ttl_minutes", 20)
+            risk_manager.max_positions = int(params.get("risk_management", {}).get("max_concurrent_positions", 3))
 
             macro_cfg = dict(params.get("macro_engine", {}))
             base_dyn_params = review_engine.optimizer.load_active_params()
@@ -165,6 +167,9 @@ def run_trading_daemon():
                 mt5_client.connect()
                 time.sleep(5)
                 continue
+
+            # 現在保有中のポジションが属するエンジン一覧を取得（まだ保有していない別エンジンのピラミッディング機会を解放）
+            market_state["active_open_engines"] = risk_manager.get_open_engines(symbol)
 
             # --- A-2. デュアル先行指標エンジン評価（TV主系 / MT5 M1自動フェイルオーバー） ---
             macro_state = {}
@@ -214,10 +219,11 @@ def run_trading_daemon():
                 time.sleep(300)
                 continue
 
-            # --- B-2. 【プロップファーム仕様】建値移動 (Break-Even) ＆ マクロ反転トレーリング防御 ---
+            # --- B-2. 【複数ポジション個別対応】建値移動 (Break-Even) ＆ マクロ反転トレーリング防御 ---
             be_result = risk_manager.apply_break_even_protection(symbol, market_state["pip_size"])
             if be_result:
                 print(f"[BREAK-EVEN TRIGGERED] {be_result}")
+                review_engine.record_defense_event("break_even")
 
             trail_result = risk_manager.apply_macro_trailing_protection(
                 symbol=symbol,
@@ -227,6 +233,7 @@ def run_trading_daemon():
             )
             if trail_result:
                 print(f"[MACRO TRAILING TRIGGERED] {trail_result}")
+                review_engine.record_defense_event("macro_trailing")
 
             # --- B-3. 決済検知 ＆ 損益同期（position_id対応） ＆ 同方向SLトラッキング ---
             try:
@@ -256,10 +263,12 @@ def run_trading_daemon():
             except Exception:
                 pass
 
-            # --- C. 戦略シグナルの評価（3系統ハイブリッド: 型A + 型B + 既存SMC） ---
+            # --- C. 戦略シグナルの評価（3系統ハイブリッド: 未保有エンジンのみ評価してピラミッディング対応） ---
             signal = strategy.evaluate(market_state)
+            if getattr(strategy, "last_hard_guard_blocked", False):
+                review_engine.record_defense_event("hard_guard")
 
-            # --- D. 毎時00分の定時レポート送信（※平日の市場オープン中のみ送信、土日は上記ガードで完全停止） ---
+            # --- D. 毎時00分の定時レポート送信（※平日の市場オープン中のみ送信） ---
             if now.minute == 0 and now.hour != last_hourly_report_hour:
                 print(f"[HOURLY REPORT TRIGGER] {now.strftime('%Y-%m-%d %H:%M:%S')}")
                 active_session = strategy.get_active_session() or "Interbank_OffHours"
@@ -273,16 +282,18 @@ def run_trading_daemon():
                 discord_mgr.send_hourly_status(market_state, signal, account_state, committee_report=committee_report)
                 last_hourly_report_hour = now.hour
 
-            # --- D-2. 毎朝06:00 JST（日次クローズ時）の自律振り返り ＆ 改善レポート送信（※日曜・月曜朝の休場明け空レビューは除外） ---
+            # --- D-2. 毎朝06:00 JST（日次クローズ時）の6ブロック運用ブリーフィング送信（※日曜・月曜朝の空レビューは除外） ---
             if now_jst.hour == 6 and now_jst.day != last_daily_review_day and now_jst.weekday() not in (6, 0):
-                print(f"[DAILY REVIEW TRIGGER] {now_jst.strftime('%Y-%m-%d %H:%M:%S JST')} - 日次振り返りPDCAを実行中...")
+                print(f"[DAILY REVIEW TRIGGER] {now_jst.strftime('%Y-%m-%d %H:%M:%S JST')} - 6ブロック日次運用ブリーフィングを実行中...")
                 eval_data = review_engine.generate_daily_review(
-                    market_summary=f"Ask: ${market_state['current_ask']:.2f}, ATR: {market_state['atr_m15_pips']} pips, Regime: {active_regime}"
+                    market_summary=f"Ask: ${market_state['current_ask']:.2f}, ATR: {market_state['atr_m15_pips']} pips, Regime: {active_regime}",
+                    market_state=market_state,
+                    active_regime=active_regime,
                 )
                 discord_mgr.send_daily_review_report(eval_data)
                 last_daily_review_day = now_jst.day
 
-            # --- E. シグナル発生時の発注判定 ---
+            # --- E. シグナル発生時の発注判定（3系統別最大3ポジション・順張りピラミッディング） ---
             if signal.action in ["BUY", "SELL"]:
                 now_ts = time.time()
                 df_bar = market_state.get("df_m5") if market_state.get("df_m5") is not None else market_state.get("df_m15")
@@ -302,56 +313,71 @@ def run_trading_daemon():
                     # 2. スプレッドフィルター
                     if current_spread > max_spread:
                         print(f"[REJECTED] スプレッド過大 ({current_spread} pips > {max_spread} pips). 正常化待機。")
-
-                    # 3. 単一ポジション限定チェック
-                    elif risk_manager.enforce_single_pos and risk_manager.has_open_positions(symbol):
-                        print(f"[REJECTED] 既に {symbol} のポジションを保有中。単ポジ厳守のため新規発注をブロック。")
-
-                    # 3-2. 同方向SL直後の連敗ループ防止
-                    elif (
-                        last_loss_direction == signal.action
-                        and last_loss_time is not None
-                        and (datetime.datetime.now() - last_loss_time).total_seconds() < 900
-                    ):
-                        elapsed_s = int((datetime.datetime.now() - last_loss_time).total_seconds())
-                        print(f"[REJECTED] 直前に {signal.action} でSL被弾 ({elapsed_s}秒前)。同方向の連打自滅を防止するため一時見送り。")
+                        review_engine.record_defense_event("spread_block")
 
                     else:
-                        # 4. AI マクロNLPガード判定
-                        macro_allowed, macro_reason = ai_guard.check_macro_safety(symbol)
-                        if not macro_allowed:
-                            print(f"[AI GUARD HALT] マクロ危険水準検知により発注停止: {macro_reason}")
+                        # 3. 3系統ロジック別1ポジション（最大3ポジ・両建て禁止・フリーロール判定）チェック
+                        can_open_pos, pos_reason, pyramid_scale = risk_manager.check_can_open_position(
+                            symbol=symbol,
+                            action=signal.action,
+                            entry_engine=signal.entry_engine,
+                        )
+                        if not can_open_pos:
+                            print(f"[REJECTED] {pos_reason}")
+
+                        # 3-2. 同方向SL直後の連敗ループ防止
+                        elif (
+                            last_loss_direction == signal.action
+                            and last_loss_time is not None
+                            and (datetime.datetime.now() - last_loss_time).total_seconds() < 900
+                        ):
+                            elapsed_s = int((datetime.datetime.now() - last_loss_time).total_seconds())
+                            print(f"[REJECTED] 直前に {signal.action} でSL被弾 ({elapsed_s}秒前)。同方向の連打自滅を防止するため一時見送り。")
+                            review_engine.record_defense_event("sl_cooldown")
+
                         else:
-                            # 5. 適正ロットサイズの計算（動的ATR基準 × マクロ強弱倍率）
-                            calc_lot = risk_manager.calculate_position_size(
-                                sl_distance_pips=signal.sl_distance_pips,
-                                pip_size=market_state["pip_size"],
-                                lot_multiplier=signal.lot_multiplier,
-                            )
+                            # 4. AI マクロNLPガード判定
+                            macro_allowed, macro_reason = ai_guard.check_macro_safety(symbol)
+                            if not macro_allowed:
+                                print(f"[AI GUARD HALT] マクロ危険水準検知により発注停止: {macro_reason}")
+                            else:
+                                # 5. 適正ロットサイズの計算（動的ATR基準 × マクロ強弱倍率 × ピラミッディング安全係数）
+                                effective_lot_mult = round(signal.lot_multiplier * pyramid_scale, 3)
+                                calc_lot = risk_manager.calculate_position_size(
+                                    sl_distance_pips=signal.sl_distance_pips,
+                                    pip_size=market_state["pip_size"],
+                                    lot_multiplier=effective_lot_mult,
+                                )
 
-                            # 6. 実発注執行（ブローカー側ハードSL/TP即時付与）
-                            entry_price = market_state["current_ask"] if signal.action == "BUY" else market_state["current_bid"]
-                            exec_result = mt5_client.execute_order(
-                                action=signal.action,
-                                volume=calc_lot,
-                                price=entry_price,
-                                sl_price=signal.suggested_sl_price,
-                                tp_price=signal.suggested_tp_price
-                            )
+                                # 6. 実発注執行（ブローカー側ハードSL/TP ＋ エンジン識別コメント即時付与）
+                                entry_price = market_state["current_ask"] if signal.action == "BUY" else market_state["current_bid"]
+                                order_comment = f"v9:{signal.entry_engine}"
+                                exec_result = mt5_client.execute_order(
+                                    action=signal.action,
+                                    volume=calc_lot,
+                                    price=entry_price,
+                                    sl_price=signal.suggested_sl_price,
+                                    tp_price=signal.suggested_tp_price,
+                                    comment=order_comment,
+                                )
 
-                            if exec_result:
-                                last_signal_bar_time = current_bar_time
-                                if signal.entry_engine in ("MACRO_MOMENTUM", "SMT_DIVERGENCE"):
-                                    last_macro_entry_ts = now_ts
-                                    if signal.macro_source == "TV_WEBHOOK":
-                                        kind = "momentum" if signal.entry_engine == "MACRO_MOMENTUM" else "smt"
-                                        webhook_store.mark_consumed(kind)
+                                if exec_result:
+                                    risk_manager.register_position_engine(exec_result.get("order_id"), signal.entry_engine)
+                                    if signal.entry_engine in ("MACRO_MOMENTUM", "SMT_DIVERGENCE"):
+                                        last_macro_entry_ts = now_ts
+                                        if signal.macro_source == "TV_WEBHOOK":
+                                            kind = "momentum" if signal.entry_engine == "MACRO_MOMENTUM" else "smt"
+                                            webhook_store.mark_consumed(kind)
+                                    else:
+                                        last_signal_bar_time = current_bar_time
 
-                                signal_data = signal.model_dump()
-                                signal_data["macro_reason"] = macro_reason
-                                signal_data["active_regime"] = active_regime
-                                review_engine.log_trade_execution(exec_result, signal_data)
-                                discord_mgr.send_execution_alert(exec_result, signal_data)
+                                    signal_data = signal.model_dump()
+                                    signal_data["lot_multiplier"] = effective_lot_mult
+                                    signal_data["macro_reason"] = macro_reason
+                                    signal_data["active_regime"] = active_regime
+                                    signal_data["pyramid_reason"] = pos_reason
+                                    review_engine.log_trade_execution(exec_result, signal_data)
+                                    discord_mgr.send_execution_alert(exec_result, signal_data)
 
             # スキャン待機（15秒ごとにスキャン）
             time.sleep(15)

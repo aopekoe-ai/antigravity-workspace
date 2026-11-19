@@ -7,7 +7,8 @@
     "max_daily_drawdown_percent": 3.0,
     "min_lot_size": 0.01,
     "max_lot_size": 0.50,
-    "enforce_single_position": true
+    "max_concurrent_positions": 3,
+    "enforce_single_position": false
   },
   "volatility_parameters": {
     "atr_period": 14,

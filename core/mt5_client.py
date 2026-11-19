@@ -24,10 +24,8 @@ class RobustMT5Client:
         """MT5との接続確立（起動中インスタンスへのアタッチ または 指定アカウントでの初期化）"""
         for attempt in range(1, max_retries + 1):
             try:
-                # 1. まず起動中ターミナルへ引数なしでアタッチ試行
                 success = mt5.initialize()
                 if not success and (self.login and self.password and self.server):
-                    # 2. 失敗した場合はアカウント引数付きで試行
                     init_kwargs = {
                         "login": int(self.login),
                         "password": str(self.password),
@@ -38,7 +36,6 @@ class RobustMT5Client:
                     success = mt5.initialize(**init_kwargs)
 
                 if success:
-                    # アカウント情報の取得確認
                     acc = mt5.account_info()
                     if acc and self.login and acc.login != int(self.login):
                         print(f"[MT5 INFO] アカウント切り替え実行: #{acc.login} -> #{self.login}")
@@ -93,10 +90,11 @@ class RobustMT5Client:
         price: float,
         sl_price: float,
         tp_price: float,
-        order_kind: str = "MARKET"
+        order_kind: str = "MARKET",
+        comment: str = "v9:SMC"
     ) -> Optional[Dict[str, Any]]:
         """
-        【完全フェールセーフ】ブローカーサーバーへハードSL/TPを同時に書き込む注文執行
+        【完全フェールセーフ】ブローカーサーバーへハードSL/TPとエンジン識別コメントを同時に書き込む注文執行
         """
         if not self.ensure_symbol_selected():
             print(f"[MT5 ERROR] シンボル {self.symbol} の選択に失敗しました。")
@@ -118,6 +116,7 @@ class RobustMT5Client:
 
         sl = round(sl_price, digits)
         tp = round(tp_price, digits)
+        safe_comment = str(comment or "v9:SMC")[:31]
 
         request = {
             "action": mt5.TRADE_ACTION_DEAL,
@@ -129,12 +128,12 @@ class RobustMT5Client:
             "tp": tp,
             "deviation": 20,
             "magic": 202611,
-            "comment": "AI Hedge Fund Robust v8.0",
+            "comment": safe_comment,
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": type_filling,
         }
 
-        print(f"[ORDER SENDING] {self.symbol} {action} {volume} Lot @ {deal_price:.2f} (SL: {sl:.2f}, TP: {tp:.2f})")
+        print(f"[ORDER SENDING] {self.symbol} {action} {volume} Lot @ {deal_price:.2f} (SL: {sl:.2f}, TP: {tp:.2f}, Engine: {safe_comment})")
         result = mt5.order_send(request)
 
         if not result or result.retcode != mt5.TRADE_RETCODE_DONE:
@@ -143,7 +142,7 @@ class RobustMT5Client:
             print(f"[MT5 ORDER FAILED] 約定失敗: {err_msg} (retcode: {retcode})")
             return None
 
-        print(f"🎉 [MT5 ORDER SUCCESS] 約定完了! 注文番号: #{result.order}, 約定価格: {result.price:.2f}")
+        print(f"🎉 [MT5 ORDER SUCCESS] 約定完了! 注文番号: #{result.order}, 約定価格: {result.price:.2f} ({safe_comment})")
         return {
             "order_id": str(result.order),
             "symbol": self.symbol,
@@ -151,5 +150,6 @@ class RobustMT5Client:
             "volume": float(volume),
             "price": float(result.price),
             "sl": float(sl),
-            "tp": float(tp)
+            "tp": float(tp),
+            "comment": safe_comment
         }
