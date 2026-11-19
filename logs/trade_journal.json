@@ -1726,5 +1726,26 @@
     "close_price": 3730.17,
     "profit": -8422.0,
     "close_time": "2026-11-19 05:06:39"
+  },
+  {
+    "order_id": "2912364387",
+    "time": "2026-11-19 05:42:17",
+    "symbol": "XAUUSD",
+    "action": "SELL",
+    "volume": 0.06,
+    "price": 3733.435,
+    "sl": 3743.34,
+    "tp": 3714.33,
+    "setup_name": "MacroA_NewYork_TV_WEBHOOK_Momentum_SELL",
+    "entry_engine": "MACRO_MOMENTUM",
+    "macro_source": "TV_WEBHOOK",
+    "lot_multiplier": 1.15,
+    "active_regime": "REGIME_MACRO_TREND",
+    "rationale": "[NewYork/型Aマクロモメンタム] FVG不要の上位足順張り(H1:BEARISH, M15:NEUTRAL)。TV主系コンフルエンス急変 (DXY Z=+1.31, US10Y Z=+1.84) ＋ ゴールド追随確認。SL: 95.1pips(M5 ATR動的), RR 1:2.05, ロット倍率:1.15x",
+    "magic": 202611,
+    "status": "OPEN",
+    "close_price": null,
+    "profit": null,
+    "close_time": null
   }
 ]

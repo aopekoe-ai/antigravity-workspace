@@ -86,6 +86,9 @@ def run_trading_daemon():
     # 起動時に過去30日分のMT5決済履歴とジャーナルを完全突合＆ログローテーション保全
     review_engine.reconcile_with_mt5_history(days=30)
     review_engine.log_maintainer.run_maintenance()
+    for rec in review_engine._load_journal():
+        if rec.get("status") == "OPEN" and rec.get("order_id"):
+            risk_manager.register_position_engine(rec.get("order_id"), rec.get("entry_engine", "SMC"))
 
     # 初回起動時に週末検証データ（weekend_macro_study.json）が未生成なら即座にベースライン検証を実行
     if not weekend_lab.study_file.exists():
