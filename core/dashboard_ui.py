@@ -498,30 +498,48 @@ def get_dashboard_html() -> str:
           </div>
           <div class="form-group">
             <div class="form-label"><span>1トレードリスク (%)</span></div>
-            <input type="number" id="cfg-risk-pct" class="form-input" step="0.1" min="0" value="1.5" placeholder="0で最小固定Lot">
+            <input type="number" id="cfg-risk-pct" class="form-input" step="0.1" min="0" placeholder="0で最小固定Lot">
           </div>
           <div class="form-group">
             <div class="form-label"><span>日次最大DD停止 (%) <span style="font-size:10px;color:var(--gold);">(0で無効)</span></span></div>
-            <input type="number" id="cfg-dd-pct" class="form-input" step="0.5" min="0" value="3.0" placeholder="0で停止無効（上限なし）">
+            <input type="number" id="cfg-dd-pct" class="form-input" step="0.5" min="0" placeholder="0で停止無効（上限なし）">
           </div>
           <div class="form-group">
             <div class="form-label"><span>最大ロット上限 (Lot) <span style="font-size:10px;color:var(--gold);">(0で無制限)</span></span></div>
-            <input type="number" id="cfg-max-lot" class="form-input" step="0.05" min="0" value="0.50" placeholder="0で口座上限まで無制限">
+            <input type="number" id="cfg-max-lot" class="form-input" step="0.05" min="0" placeholder="0で口座上限まで無制限">
           </div>
           <div class="form-group">
             <div class="form-label"><span>許容スプレッド (pips) <span style="font-size:10px;color:var(--gold);">(0で無制限)</span></span></div>
-            <input type="number" id="cfg-max-sp" class="form-input" step="0.5" min="0" value="3.0" placeholder="0で制限なし（上限なし）">
+            <input type="number" id="cfg-max-sp" class="form-input" step="0.5" min="0" placeholder="0で制限なし（上限なし）">
           </div>
           <div class="form-group">
             <div class="form-label"><span>連敗防止待機 (分) <span style="font-size:10px;color:var(--gold);">(0で待機なし)</span></span></div>
-            <input type="number" id="cfg-sl-cool" class="form-input" step="1" min="0" value="15" placeholder="0で待機なし">
+            <input type="number" id="cfg-sl-cool" class="form-input" step="1" min="0" placeholder="0で待機なし">
           </div>
         </div>
       </div>
 
       <div>
         <div class="card">
-          <div class="card-title">🤖 AI自己最適化（Step 3）へのオーナー改修方針指示</div>
+          <div class="card-title">
+            <span>🧠 Google AI 機能マスター ＆ サブスク解約時 ON/OFF スイッチ</span>
+            <span id="ai-master-badge" class="badge bull">AI全機能 稼働中</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5;">
+            Google AI サブスク解約時や API コストを完全ゼロ（純粋なテクニカル・クオンツ自動売買のみ）にしたい場合、マスターまたは機能別スイッチでいつでも無停止切替可能です。
+          </div>
+          <div class="toggle-row" style="background:rgba(245,158,11,0.12);padding:6px 10px;border-radius:8px;border:1px solid rgba(245,158,11,0.3);margin-bottom:8px;">
+            <strong style="color:var(--gold);">⚡ AI全機能マスター一括スイッチ (全AI機能を即時停止/再開)</strong>
+            <input type="checkbox" id="cfg-ai-master" checked onchange="onAiMasterToggle()">
+          </div>
+          <div id="ai-individual-toggles" style="padding-left:4px;">
+            <div class="toggle-row"><span>🛡️ シグナル成立時 AI安全門番 (Macro NLP Guard / 危険指標停止)</span><input type="checkbox" id="cfg-ai-guard" checked></div>
+            <div class="toggle-row"><span>🏛️ 毎週日曜 6役マルチエージェントAI投資委員会 (Gemini 4 Neon)</span><input type="checkbox" id="cfg-ai-ic" checked></div>
+            <div class="toggle-row"><span>📊 毎時00分 AI定時相場状況エバリュエーター (Gemini 3.8 Flash)</span><input type="checkbox" id="cfg-ai-eval" checked></div>
+            <div class="toggle-row"><span>🤖 毎朝06:00 AI日次PDCA運用ブリーフィング ＆ 戦略最適化</span><input type="checkbox" id="cfg-ai-review" checked></div>
+          </div>
+
+          <div class="card-title" style="margin-top:14px;">🤖 AI自己最適化へのオーナー改修方針指示</div>
           <div class="form-group">
             <div class="form-label"><span>毎朝06:00のGemini自己最適化に反映させたい方針・要望</span></div>
             <textarea id="cfg-owner-dir" class="form-textarea" placeholder="例：今週はトレンドが伸びやすいので利確RR比を広めにし、FVG条件は緩めて機会損失を防いでほしい"></textarea>
@@ -1296,16 +1314,27 @@ function populateControls(st) {
   document.getElementById('cfg-sess-lon').checked = c.session_london !== false;
   document.getElementById('cfg-sess-ny').checked = c.session_ny !== false;
 
-  document.getElementById('cfg-max-pos').value = String(c.max_concurrent_positions || 3);
-  document.getElementById('cfg-risk-pct').value = c.risk_per_trade_percent || 1.5;
-  document.getElementById('cfg-dd-pct').value = c.max_daily_drawdown_percent || 3.0;
-  document.getElementById('cfg-max-lot').value = c.max_lot_size || 0.50;
-  document.getElementById('cfg-max-sp').value = c.max_allowed_spread_pips || 3.0;
-  document.getElementById('cfg-sl-cool').value = c.sl_cooldown_minutes || 15;
+  const numOr = (val, fallback) => (val !== undefined && val !== null && !isNaN(val)) ? val : fallback;
+
+  document.getElementById('cfg-max-pos').value = String(numOr(c.max_concurrent_positions, 3));
+  document.getElementById('cfg-risk-pct').value = numOr(c.risk_per_trade_percent, 1.5);
+  document.getElementById('cfg-dd-pct').value = numOr(c.max_daily_drawdown_percent, 3.0);
+  document.getElementById('cfg-max-lot').value = numOr(c.max_lot_size, 0.50);
+  document.getElementById('cfg-max-sp').value = numOr(c.max_allowed_spread_pips, 3.0);
+  document.getElementById('cfg-sl-cool').value = numOr(c.sl_cooldown_minutes, 15);
   document.getElementById('cfg-owner-dir').value = c.owner_directive_ja || '';
   document.getElementById('cfg-notif-hourly').checked = c.notify_hourly !== false;
   document.getElementById('cfg-notif-weekend').checked = c.notify_weekend !== false;
-  document.getElementById('cfg-daily-hour').value = String(c.daily_report_hour_jst || 6);
+  document.getElementById('cfg-daily-hour').value = String(numOr(c.daily_report_hour_jst, 6));
+
+  // AI機能ON/OFFトグル初期化
+  const aiMaster = c.ai_master_enabled !== false;
+  document.getElementById('cfg-ai-master').checked = aiMaster;
+  document.getElementById('cfg-ai-guard').checked = c.enable_ai_guard !== false;
+  document.getElementById('cfg-ai-ic').checked = c.enable_ai_ic !== false;
+  document.getElementById('cfg-ai-eval').checked = c.enable_ai_evaluator !== false;
+  document.getElementById('cfg-ai-review').checked = c.enable_ai_review !== false;
+  updateAiMasterBadge(aiMaster);
 
   document.getElementById('brk-login').value = brk.login || '';
   document.getElementById('brk-server').value = brk.server || '';
@@ -1382,7 +1411,6 @@ function openConfirmModal(titleTxt, descTxt, onYesFn) {
     closeConfirmModal();
     if (fn) {
       await fn();
-      toggleEditLock(false);
     }
   };
   document.getElementById('confirm-modal').classList.add('open');
@@ -1444,6 +1472,7 @@ function confirmSaveControlConfig() {
   const enA = document.getElementById('cfg-en-a').checked ? 'ON' : 'OFF';
   const enB = document.getElementById('cfg-en-b').checked ? 'ON' : 'OFF';
   const enS = document.getElementById('cfg-en-smc').checked ? 'ON' : 'OFF';
+  const aiM = document.getElementById('cfg-ai-master').checked ? '全ON' : '全OFF';
   const maxP = document.getElementById('cfg-max-pos').value;
   const risk = document.getElementById('cfg-risk-pct').value;
   const dd = document.getElementById('cfg-dd-pct').value;
@@ -1458,9 +1487,35 @@ function confirmSaveControlConfig() {
 
   openConfirmModal(
     '💾 設定・改修方針の保存確認',
-    `以下の設定を保存し、本番BOTへ反映してよろしいですか？\n\n・稼働ロジック: 型A[${enA}] / 型B[${enB}] / SMC[${enS}]\n・最大同時ポジ数: ${posTxt}\n・1回リスク: ${risk}%\n・日次最大DD停止: ${ddTxt}\n・ロット上限: ${lotTxt}\n・許容スプレッド: ${spTxt}\n・AI方針メモ: ${dir ? dir : '(指定なし)'}`,
+    `以下の設定を保存し、本番BOTへ反映してよろしいですか？\n\n・Google AI機能: [${aiM}]\n・稼働ロジック: 型A[${enA}] / 型B[${enB}] / SMC[${enS}]\n・最大同時ポジ数: ${posTxt}\n・1回リスク: ${risk}%\n・日次最大DD停止: ${ddTxt}\n・ロット上限: ${lotTxt}\n・許容スプレッド: ${spTxt}\n・AI方針メモ: ${dir ? dir : '(指定なし)'}`,
     saveControlConfig
   );
+}
+
+function onAiMasterToggle() {
+  const master = document.getElementById('cfg-ai-master').checked;
+  const toggles = ['cfg-ai-guard', 'cfg-ai-ic', 'cfg-ai-eval', 'cfg-ai-review'];
+  toggles.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = !master;
+      el.parentElement.style.opacity = master ? '1.0' : '0.5';
+    }
+  });
+  updateAiMasterBadge(master);
+}
+
+function updateAiMasterBadge(isMasterOn) {
+  const badge = document.getElementById('ai-master-badge');
+  if (badge) {
+    if (isMasterOn) {
+      badge.textContent = 'AI全機能 稼働中';
+      badge.className = 'badge bull';
+    } else {
+      badge.textContent = '⏸️ AI機能 一時停止中 (純クオンツ運用)';
+      badge.className = 'badge bear';
+    }
+  }
 }
 
 async function saveControlConfig() {
@@ -1481,10 +1536,20 @@ async function saveControlConfig() {
     notify_hourly: document.getElementById('cfg-notif-hourly').checked,
     notify_weekend: document.getElementById('cfg-notif-weekend').checked,
     daily_report_hour_jst: Number(document.getElementById('cfg-daily-hour').value),
+    ai_master_enabled: document.getElementById('cfg-ai-master').checked,
+    enable_ai_guard: document.getElementById('cfg-ai-guard').checked,
+    enable_ai_ic: document.getElementById('cfg-ai-ic').checked,
+    enable_ai_evaluator: document.getElementById('cfg-ai-eval').checked,
+    enable_ai_review: document.getElementById('cfg-ai-review').checked,
   };
   const r = await apiCall('/api/control/params', 'POST', payload);
   showToast(r.message || '設定と改修方針を保存しました（15秒以内に即反映）');
-  refreshAll();
+  if (window._lastFetchedState) {
+    window._lastFetchedState.control_config = Object.assign(window._lastFetchedState.control_config || {}, payload);
+  }
+  controlsInitialized = false;
+  await refreshAll();
+  toggleEditLock(false);
 }
 
 function confirmSwitchBrokerAccount() {

@@ -336,7 +336,8 @@ class TVWebhookServer:
                     payload = json.loads(raw_bytes.decode("utf-8"))
                     if not isinstance(payload, dict):
                         raise ValueError("JSON root must be object")
-                except Exception:
+                except Exception as e:
+
                     self._send_json(400, {"error": "invalid_json"})
                     return
 
@@ -405,5 +406,6 @@ class TVWebhookServer:
             try:
                 self._server.shutdown()
                 self._server.server_close()
-            except Exception:
+            except Exception as e:
+
                 pass

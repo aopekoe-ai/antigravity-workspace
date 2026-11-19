@@ -10,7 +10,7 @@ class MacroNLPGuard:
     
     1. シグナル成立時のみ稼働（毎秒/毎分の無駄撃ちゼロ）
     2. TTLキャッシュ機構（同一判定を20分間キャッシュし、APIコールを劇的に削減）
-    3. thinking_budget=0 設定（Gemini 2.5 Flashの思考トークンを0にし、消費を最小化）
+    3. Gemini 3.8 Flash 使用（thinking_budget=0 で思考トークンを0にし、消費を最小化）
     4. プロンプト超圧縮（入力約60トークン、出力約30〜50トークンに極限まで圧縮）
     """
     def __init__(self, cache_ttl_minutes: int = 20):

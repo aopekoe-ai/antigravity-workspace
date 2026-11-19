@@ -1,93 +1,98 @@
 {
-    "symbol": "XAUUSD",
-    "timeframe_signal": "M15",
-    "timeframe_trend": "H1",
-    "risk_management": {
-        "risk_per_trade_percent": 1.5,
-        "max_daily_drawdown_percent": 10.0,
-        "min_lot_size": 0.01,
-        "max_lot_size": 0.3,
-        "max_concurrent_positions": 3,
-        "enforce_single_position": false
-    },
-    "volatility_parameters": {
-        "atr_period": 14,
-        "atr_sl_multiplier": 1.3,
-        "min_sl_pips": 12.0,
-        "max_sl_pips": 55.0,
-        "min_risk_reward_ratio": 1.5
-    },
-    "execution_filters": {
-        "max_allowed_spread_pips": 10.0,
-        "allowed_sessions_jst": [
-            {
-                "name": "Asia",
-                "start_hour": 8,
-                "end_hour": 15
-            },
-            {
-                "name": "London_Pre",
-                "start_hour": 15,
-                "end_hour": 16
-            },
-            {
-                "name": "London",
-                "start_hour": 16,
-                "end_hour": 24
-            },
-            {
-                "name": "NewYork",
-                "start_hour": 21,
-                "end_hour": 6
-            }
-        ],
-        "avoid_first_n_minutes_of_session": 2
-    },
-    "ai_guard": {
-        "enabled": true,
-        "halt_on_high_impact_news": true,
-        "cache_ttl_minutes": 20,
-        "news_buffer_minutes_before": 15,
-        "news_buffer_minutes_after": 20
-    },
-    "macro_engine": {
-        "enabled": true,
-        "webhook_port": 8000,
-        "tv_signal_ttl_seconds": 300,
-        "tv_heartbeat_ttl_seconds": 900,
-        "momentum_z_threshold": 1.5,
-        "momentum_cooldown_min_sec": 45,
-        "momentum_cooldown_max_sec": 240,
-        "max_chase_atr_mult": 1.5,
-        "smt_lookback_m1": 35,
-        "hard_guard_threshold": 0.7,
-        "soft_guard_threshold": 0.35,
-        "boost_lot_multiplier": 1.25,
-        "soft_guard_lot_multiplier": 0.75,
-        "macro_sl_atr_multiplier": 1.7,
-        "macro_min_rr": 1.8,
-        "smt_min_rr": 2.0,
-        "mt5_symbols": {
-            "dxy": "DXY",
-            "yield_proxy": "USDJPY",
-            "oil": "USOIL",
-            "equity": "USTEC",
-            "aud": "AUDUSD"
-        }
-    },
-    "dashboard_controls": {
-        "stance": "BALANCED",
-        "trading_paused": false,
-        "enable_type_a": true,
-        "enable_type_b": true,
-        "enable_smc": true,
-        "session_asia": true,
-        "session_london": true,
-        "session_ny": true,
-        "sl_cooldown_minutes": 5,
-        "owner_directive_ja": "",
-        "notify_hourly": true,
-        "notify_weekend": true,
-        "daily_report_hour_jst": 6
+  "symbol": "XAUUSD",
+  "timeframe_signal": "M15",
+  "timeframe_trend": "H1",
+  "risk_management": {
+    "risk_per_trade_percent": 1.5,
+    "max_daily_drawdown_percent": 10.0,
+    "min_lot_size": 0.01,
+    "max_lot_size": 0.3,
+    "max_concurrent_positions": 3,
+    "enforce_single_position": false
+  },
+  "volatility_parameters": {
+    "atr_period": 14,
+    "atr_sl_multiplier": 1.3,
+    "min_sl_pips": 12.0,
+    "max_sl_pips": 55.0,
+    "min_risk_reward_ratio": 1.5
+  },
+  "execution_filters": {
+    "max_allowed_spread_pips": 10.0,
+    "allowed_sessions_jst": [
+      {
+        "name": "Asia",
+        "start_hour": 8,
+        "end_hour": 15
+      },
+      {
+        "name": "London_Pre",
+        "start_hour": 15,
+        "end_hour": 16
+      },
+      {
+        "name": "London",
+        "start_hour": 16,
+        "end_hour": 24
+      },
+      {
+        "name": "NewYork",
+        "start_hour": 21,
+        "end_hour": 6
+      }
+    ],
+    "avoid_first_n_minutes_of_session": 2
+  },
+  "ai_guard": {
+    "enabled": true,
+    "halt_on_high_impact_news": true,
+    "cache_ttl_minutes": 20,
+    "news_buffer_minutes_before": 15,
+    "news_buffer_minutes_after": 20
+  },
+  "macro_engine": {
+    "enabled": true,
+    "webhook_port": 8000,
+    "tv_signal_ttl_seconds": 300,
+    "tv_heartbeat_ttl_seconds": 900,
+    "momentum_z_threshold": 1.5,
+    "momentum_cooldown_min_sec": 45,
+    "momentum_cooldown_max_sec": 240,
+    "max_chase_atr_mult": 1.5,
+    "smt_lookback_m1": 35,
+    "hard_guard_threshold": 0.7,
+    "soft_guard_threshold": 0.35,
+    "boost_lot_multiplier": 1.25,
+    "soft_guard_lot_multiplier": 0.75,
+    "macro_sl_atr_multiplier": 1.7,
+    "macro_min_rr": 1.8,
+    "smt_min_rr": 2.0,
+    "mt5_symbols": {
+      "dxy": "DXY",
+      "yield_proxy": "USDJPY",
+      "oil": "USOIL",
+      "equity": "USTEC",
+      "aud": "AUDUSD"
     }
+  },
+  "dashboard_controls": {
+    "stance": "BALANCED",
+    "trading_paused": false,
+    "enable_type_a": true,
+    "enable_type_b": true,
+    "enable_smc": true,
+    "session_asia": true,
+    "session_london": true,
+    "session_ny": true,
+    "sl_cooldown_minutes": 5,
+    "owner_directive_ja": "",
+    "notify_hourly": false,
+    "notify_weekend": true,
+    "daily_report_hour_jst": 8,
+    "ai_master_enabled": true,
+    "enable_ai_guard": true,
+    "enable_ai_evaluator": true,
+    "enable_ai_review": true,
+    "enable_ai_ic": true
+  }
 }

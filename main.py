@@ -215,6 +215,11 @@ def run_trading_daemon():
                     "notify_hourly": d_ctrl.get("notify_hourly", True),
                     "notify_weekend": d_ctrl.get("notify_weekend", True),
                     "daily_report_hour_jst": d_ctrl.get("daily_report_hour_jst", 6),
+                    "ai_master_enabled": d_ctrl.get("ai_master_enabled", True),
+                    "enable_ai_guard": d_ctrl.get("enable_ai_guard", True),
+                    "enable_ai_evaluator": d_ctrl.get("enable_ai_evaluator", True),
+                    "enable_ai_review": d_ctrl.get("enable_ai_review", True),
+                    "enable_ai_ic": d_ctrl.get("enable_ai_ic", True),
                 },
             }
 
@@ -267,7 +272,12 @@ def run_trading_daemon():
             ex_cfg = cur_params.setdefault("execution_filters", {})
             mac_c = cur_params.setdefault("macro_engine", {})
 
-            for b_key in ("enable_type_a", "enable_type_b", "enable_smc", "session_asia", "session_london", "session_ny", "notify_hourly", "notify_weekend"):
+            for b_key in (
+                "enable_type_a", "enable_type_b", "enable_smc",
+                "session_asia", "session_london", "session_ny",
+                "notify_hourly", "notify_weekend",
+                "ai_master_enabled", "enable_ai_guard", "enable_ai_evaluator", "enable_ai_review", "enable_ai_ic"
+            ):
                 if b_key in payload:
                     d_ctrl[b_key] = bool(payload[b_key])
 
@@ -526,7 +536,12 @@ def run_trading_daemon():
                 # 2. 日曜 10:00 JST: 6役マルチエージェント投資委員会（最新週末ニュース反映＋3択決裁リンクDiscord通知）
                 if now_jst.weekday() == 6 and now_jst.hour >= 10 and last_sunday_ic_date != today_jst_str:
                     with mt5_lock:
-                        investment_committee.run_sunday_investment_committee(trigger_source="SUNDAY_10AM_AUTO")
+                        ai_master = dash_ctrl.get("ai_master_enabled", True)
+                        ai_ic_on = dash_ctrl.get("enable_ai_ic", True)
+                        if ai_master and ai_ic_on:
+                            investment_committee.run_sunday_investment_committee(trigger_source="SUNDAY_10AM_AUTO")
+                        else:
+                            print(f"⏸️ [SUNDAY IC PAUSED] ダッシュボード設定によりAI投資委員会の開催は一時停止中 (ai_master={ai_master}, ai_ic={ai_ic_on})")
                     last_sunday_ic_date = today_jst_str
 
                 time.sleep(60)
@@ -722,24 +737,34 @@ def run_trading_daemon():
                 if notify_hourly and now.minute == 0 and now.hour != last_hourly_report_hour:
                     print(f"[HOURLY REPORT TRIGGER] {now.strftime('%Y-%m-%d %H:%M:%S')}")
                     active_session = strategy.get_active_session() or "Interbank_OffHours"
-                    committee_report = committee_evaluator.evaluate_hourly(
-                        market_state=market_state,
-                        signal=signal,
-                        account_state=account_state,
-                        active_session=active_session
-                    )
+                    ai_master = dash_ctrl.get("ai_master_enabled", True)
+                    ai_eval_on = dash_ctrl.get("enable_ai_evaluator", True)
+                    if ai_master and ai_eval_on:
+                        committee_report = committee_evaluator.evaluate_hourly(
+                            market_state=market_state,
+                            signal=signal,
+                            account_state=account_state,
+                            active_session=active_session
+                        )
+                    else:
+                        committee_report = None
                     discord_mgr.send_hourly_status(market_state, signal, account_state, committee_report=committee_report)
                     last_hourly_report_hour = now.hour
 
                 # --- D-2. 日次運用ブリーフィング送信（デフォルト06:00 JST、画面から変更可） ---
                 if now_jst.hour == daily_report_hour_jst and now_jst.day != last_daily_review_day and now_jst.weekday() not in (6, 0):
                     print(f"[DAILY REVIEW TRIGGER] {now_jst.strftime('%Y-%m-%d %H:%M:%S JST')} - 6ブロック日次運用ブリーフィングを実行中...")
-                    eval_data = review_engine.generate_daily_review(
-                        market_summary=f"Ask: ${market_state['current_ask']:.2f}, ATR: {market_state['atr_m15_pips']} pips, Regime: {active_regime}",
-                        market_state=market_state,
-                        active_regime=active_regime,
-                    )
-                    discord_mgr.send_daily_review_report(eval_data)
+                    ai_master = dash_ctrl.get("ai_master_enabled", True)
+                    ai_rev_on = dash_ctrl.get("enable_ai_review", True)
+                    if ai_master and ai_rev_on:
+                        eval_data = review_engine.generate_daily_review(
+                            market_summary=f"Ask: ${market_state['current_ask']:.2f}, ATR: {market_state['atr_m15_pips']} pips, Regime: {active_regime}",
+                            market_state=market_state,
+                            active_regime=active_regime,
+                        )
+                        discord_mgr.send_daily_review_report(eval_data)
+                    else:
+                        print(f"⏸️ [DAILY REVIEW PAUSED] AI日次PDCAブリーフィングは設定により一時停止中 (ai_master={ai_master}, ai_review={ai_rev_on})")
                     last_daily_review_day = now_jst.day
 
                 # --- E. シグナル発生時の発注判定（3系統別最大3ポジション・順張りピラミッディング） ---
@@ -794,7 +819,13 @@ def run_trading_daemon():
                                 )
 
                             else:
-                                macro_allowed, macro_reason = ai_guard.check_macro_safety(symbol)
+                                ai_master = dash_ctrl.get("ai_master_enabled", True)
+                                ai_guard_on = dash_ctrl.get("enable_ai_guard", True)
+                                if ai_master and ai_guard_on:
+                                    macro_allowed, macro_reason = ai_guard.check_macro_safety(symbol)
+                                else:
+                                    macro_allowed, macro_reason = True, "AI門番機能OFF設定によりパス"
+
                                 if not macro_allowed:
                                     print(f"[AI GUARD HALT] マクロ危険水準検知により発注停止: {macro_reason}")
                                 else:

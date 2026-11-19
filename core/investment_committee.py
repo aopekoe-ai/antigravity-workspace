@@ -22,23 +22,23 @@ class SmartModelRouter:
     """
     【クォータ連動・動的上位モデル選択ルーター (Smart Tiered Model Router)】
     - AIモデルの使用量（直近1分のRPM/TPM、当日のRPD/TPD）をリアルタイム監視・永続記録する。
-    - 余裕がある時は最上位モデル `gemini-2.5-pro` (Deep Thinking 最大推論モード) を優先選択する。
-    - 使用量が増えてきた場合は、核心の判断役（開拓官・監査官・CIO議長）に最上位モデルを集中し、
-      データ整理役には `gemini-2.5-flash` (Deep Thinking) を割り当ててクォータ枯渇を防ぐ。
+    - 余裕がある時は最上位モデル `gemini-4-neon` (Extra High Deep Thinking 最大推論モード) を優先選択する。
+    - 使用量が増えてきた場合やクォータ枯渇時は、`gemini-4-carbon` → `gemini-4-argon` → `gemini-4-hydrogen`
+      → `gemini-3.8-flash` へ順次自動カスケードしてクォータ枯渇を防ぐ。
     - 万が一 API から 429 (ResourceExhausted / Quota Exceeded) 等が返った場合でも、
       0.5秒で即座に次点モデルへ無停止フォールバックし、「制限で会議ができない」事態を100%防ぐ。
     """
 
     # 安全マージン込みの1日あたり・1分あたり目安上限（週末会議が確実に完走するための自律ガード値）
-    PRO_DAILY_CALL_BUDGET = 40
-    PRO_MINUTE_CALL_BUDGET = 4
-    FLASH_DAILY_CALL_BUDGET = 400
+    NEON_DAILY_CALL_BUDGET = 60
+    NEON_MINUTE_CALL_BUDGET = 5
+    FLASH_DAILY_CALL_BUDGET = 600
 
     def __init__(self, log_dir: Path):
         self.usage_file = log_dir / "ai_quota_usage.json"
         self.available = False
         self.client = None
-        self._pro_model_enabled_in_gcp: Optional[bool] = None
+        self._disabled_models: set = set()
         try:
             self.client = genai.Client(
                 vertexai=True,
@@ -53,14 +53,14 @@ class SmartModelRouter:
         today_str = datetime.datetime.now(JST).strftime("%Y-%m-%d")
         default_data = {
             "date": today_str,
-            "pro_calls_today": 0,
+            "neon_calls_today": 0,
             "flash_calls_today": 0,
-            "pro_tokens_today": 0,
+            "neon_tokens_today": 0,
             "flash_tokens_today": 0,
-            "recent_pro_timestamps": [],
+            "recent_neon_timestamps": [],
             "last_429_ts": 0.0,
-            "last_selected_tier": "TIER_1_MAX_PRO_DEEP",
-            "last_model_used": "gemini-2.5-pro",
+            "last_selected_tier": "TIER_1_MAX_NEON_DEEP",
+            "last_model_used": "gemini-4-neon",
         }
         if self.usage_file.exists():
             try:
@@ -83,35 +83,35 @@ class SmartModelRouter:
     def get_quota_status(self) -> Dict[str, Any]:
         u = self._load_usage()
         now_ts = time.time()
-        recent_1m = [ts for ts in u.get("recent_pro_timestamps", []) if now_ts - float(ts) < 60.0]
-        pro_today = int(u.get("pro_calls_today", 0))
+        recent_1m = [ts for ts in u.get("recent_neon_timestamps", []) if now_ts - float(ts) < 60.0]
+        neon_today = int(u.get("neon_calls_today", 0))
         flash_today = int(u.get("flash_calls_today", 0))
         cooldown_429 = (now_ts - float(u.get("last_429_ts", 0.0))) < 600.0
 
-        remaining_ratio = max(0.0, 1.0 - (pro_today / float(self.PRO_DAILY_CALL_BUDGET)))
+        remaining_ratio = max(0.0, 1.0 - (neon_today / float(self.NEON_DAILY_CALL_BUDGET)))
         health_pct = round(remaining_ratio * 100.0, 1)
 
-        if cooldown_429 or health_pct < 20.0:
-            tier = "TIER_3_FLASH_DEEP_SAFE"
-            tier_label = "Tier 3: Gemini 2.5 Flash Deep-Thinking (クォータ保護モード)"
-        elif health_pct < 55.0 or len(recent_1m) >= self.PRO_MINUTE_CALL_BUDGET:
-            tier = "TIER_2_HYBRID_PRO_FLASH"
-            tier_label = "Tier 2: Gemini 2.5 Pro + Flash ハイブリッド配分 (制限回避モード)"
+        if cooldown_429 or health_pct < 15.0:
+            tier = "TIER_3_FLASH_FAST_SAFE"
+            tier_label = "Tier 3: Gemini 3.8 Flash (クォータ保護モード)"
+        elif health_pct < 45.0 or len(recent_1m) >= self.NEON_MINUTE_CALL_BUDGET:
+            tier = "TIER_2_CASCADE_HYBRID"
+            tier_label = "Tier 2: Gemini 4 Neon + Carbon/Argon/Flash ハイブリッド配分"
         else:
-            tier = "TIER_1_MAX_PRO_DEEP"
-            tier_label = "Tier 1: Gemini 2.5 Pro Deep-Thinking フル稼働 (最高推論モード)"
+            tier = "TIER_1_MAX_NEON_DEEP"
+            tier_label = "Tier 1: Gemini 4 Neon Deep-Thinking フル稼働 (最高推論モード)"
 
         return {
             "date": u.get("date"),
-            "pro_calls_today": pro_today,
+            "pro_calls_today": neon_today,
             "flash_calls_today": flash_today,
-            "pro_daily_budget": self.PRO_DAILY_CALL_BUDGET,
+            "pro_daily_budget": self.NEON_DAILY_CALL_BUDGET,
             "pro_quota_health_pct": health_pct,
             "pro_calls_last_1m": len(recent_1m),
             "in_429_cooldown": cooldown_429,
             "recommended_tier": tier,
             "recommended_tier_label": tier_label,
-            "last_model_used": u.get("last_model_used", "gemini-2.5-pro"),
+            "last_model_used": u.get("last_model_used", "gemini-4-neon"),
         }
 
     def generate_role_response(
@@ -121,10 +121,11 @@ class SmartModelRouter:
         system_instruction: str,
         prompt: str,
         temperature: float = 0.4,
-        max_output_tokens: int = 1200,
+        max_output_tokens: int = 1500,
     ) -> Tuple[Optional[Dict[str, Any]], str]:
         """
         役割と現在のクォータ余裕度に応じて最適な上位モデルを動的に選択してJSON応答を生成する。
+        週末会議: Gemini 4 Neon (最上位) -> Carbon -> Argon -> Hydrogen -> 3.8 Flash の完全自動カスケード。
         万が一レート制限(429)やエラーが発生した場合は、自動的に次点モデルへフォールバックする。
         """
         if not self.available or self.client is None:
@@ -133,37 +134,43 @@ class SmartModelRouter:
         q_status = self.get_quota_status()
         tier = q_status["recommended_tier"]
 
-        # 試行するモデルとthinking_budgetの優先順位リストを構築
-        candidates: List[Tuple[str, int, str]] = []
-        allow_pro = (self._pro_model_enabled_in_gcp is not False)
-        if tier == "TIER_1_MAX_PRO_DEEP":
-            if allow_pro:
-                candidates.append(("gemini-2.5-pro", 2048, "gemini-2.5-pro [DeepThinking:2048]"))
-            candidates.append(("gemini-2.5-flash", 2048, "gemini-2.5-flash [DeepThinking:2048]"))
-            candidates.append(("gemini-2.5-flash", 0, "gemini-2.5-flash [Fast]"))
-        elif tier == "TIER_2_HYBRID_PRO_FLASH":
-            if is_core_decision_role and allow_pro:
-                candidates.append(("gemini-2.5-pro", 2048, "gemini-2.5-pro [CoreRole-DeepThinking]"))
+        # 試行するモデルとthinking_config（LevelまたはBudget）の優先順位リストを構築
+        candidates: List[Tuple[str, Optional[str], Optional[int], str]] = []
+        if tier == "TIER_1_MAX_NEON_DEEP":
+            candidates.append(("gemini-4-neon", "HIGH", None, "gemini-4-neon [DeepThinking:HIGH]"))
+            candidates.append(("gemini-4-carbon", "HIGH", None, "gemini-4-carbon [Thinking:HIGH]"))
+            candidates.append(("gemini-4-argon", "HIGH", None, "gemini-4-argon [Thinking:HIGH]"))
+            candidates.append(("gemini-4-hydrogen", "HIGH", None, "gemini-4-hydrogen [Thinking:HIGH]"))
+            candidates.append(("gemini-3.8-flash", None, 1024, "gemini-3.8-flash [Thinking:1024]"))
+            candidates.append(("gemini-3.8-flash", None, 0, "gemini-3.8-flash [Fast]"))
+        elif tier == "TIER_2_CASCADE_HYBRID":
             if is_core_decision_role:
-                candidates.append(("gemini-2.5-flash", 2048, "gemini-2.5-flash [CoreRole-DeepThinking]"))
-            candidates.append(("gemini-2.5-flash", 1024, "gemini-2.5-flash [DeepThinking:1024]"))
-            candidates.append(("gemini-2.5-flash", 0, "gemini-2.5-flash [Fast]"))
+                candidates.append(("gemini-4-neon", "HIGH", None, "gemini-4-neon [CoreRole-DeepThinking:HIGH]"))
+            candidates.append(("gemini-4-carbon", "HIGH", None, "gemini-4-carbon [Thinking:HIGH]"))
+            candidates.append(("gemini-4-argon", "HIGH", None, "gemini-4-argon [Thinking:HIGH]"))
+            candidates.append(("gemini-4-hydrogen", "HIGH", None, "gemini-4-hydrogen [Thinking:HIGH]"))
+            candidates.append(("gemini-3.8-flash", None, 1024, "gemini-3.8-flash [Thinking:1024]"))
+            candidates.append(("gemini-3.8-flash", None, 0, "gemini-3.8-flash [Fast]"))
         else:
-            candidates.append(("gemini-2.5-flash", 1024, "gemini-2.5-flash [QuotaSafe-DeepThinking]"))
-            candidates.append(("gemini-2.5-flash", 0, "gemini-2.5-flash [Fast]"))
+            candidates.append(("gemini-4-carbon", "HIGH", None, "gemini-4-carbon [Thinking:HIGH]"))
+            candidates.append(("gemini-4-argon", "HIGH", None, "gemini-4-argon [Thinking:HIGH]"))
+            candidates.append(("gemini-4-hydrogen", "HIGH", None, "gemini-4-hydrogen [Thinking:HIGH]"))
+            candidates.append(("gemini-3.8-flash", None, 1024, "gemini-3.8-flash [QuotaSafe-Thinking]"))
+            candidates.append(("gemini-3.8-flash", None, 0, "gemini-3.8-flash [Fast]"))
 
-        for model_name, thinking_budget, label in candidates:
+        for model_name, think_level, think_budget, label in candidates:
+            if model_name in self._disabled_models:
+                continue
             try:
-                # ProモデルのRPM制限に引っかからないよう、直近1分の呼び出しが詰まっている場合は少し間隔を空ける
-                if "pro" in model_name:
+                # Neon/CarbonのRPM制限対策
+                if "neon" in model_name:
                     u_now = self._load_usage()
                     now_ts = time.time()
-                    r1m = [ts for ts in u_now.get("recent_pro_timestamps", []) if now_ts - float(ts) < 60.0]
-                    if len(r1m) >= self.PRO_MINUTE_CALL_BUDGET:
+                    r1m = [ts for ts in u_now.get("recent_neon_timestamps", []) if now_ts - float(ts) < 60.0]
+                    if len(r1m) >= self.NEON_MINUTE_CALL_BUDGET:
                         time.sleep(1.5)
 
-                # Deep Thinking 有効時は思考トークン分で出力JSONが途中切れしないよう max_output_tokens を自動拡張
-                effective_max_tokens = (max_output_tokens + thinking_budget + 1024) if thinking_budget > 0 else max_output_tokens
+                effective_max_tokens = max_output_tokens + (think_budget or 1024)
 
                 cfg_kwargs: Dict[str, Any] = {
                     "system_instruction": system_instruction,
@@ -171,10 +178,13 @@ class SmartModelRouter:
                     "temperature": temperature,
                     "max_output_tokens": effective_max_tokens,
                 }
-                if thinking_budget > 0:
-                    cfg_kwargs["thinking_config"] = {"thinking_budget": thinking_budget}
+                if think_level:
+                    lvl_enum = getattr(types.ThinkingLevel, think_level, types.ThinkingLevel.HIGH)
+                    cfg_kwargs["thinking_config"] = types.ThinkingConfig(thinking_level=lvl_enum)
+                elif think_budget is not None and think_budget > 0:
+                    cfg_kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=think_budget)
                 else:
-                    cfg_kwargs["thinking_config"] = {"thinking_budget": 0}
+                    cfg_kwargs["thinking_config"] = types.ThinkingConfig(thinking_budget=0)
 
                 resp = self.client.models.generate_content(
                     model=model_name,
@@ -189,18 +199,15 @@ class SmartModelRouter:
                 if not isinstance(parsed, dict):
                     continue
 
-                if "pro" in model_name:
-                    self._pro_model_enabled_in_gcp = True
-
                 # 使用量を記録
                 u = self._load_usage()
-                est_tokens = int((len(prompt) + len(raw_text)) / 3) + thinking_budget
-                if "pro" in model_name or thinking_budget >= 2048:
-                    u["pro_calls_today"] = int(u.get("pro_calls_today", 0)) + 1
-                    u["pro_tokens_today"] = int(u.get("pro_tokens_today", 0)) + est_tokens
-                    ts_list = [ts for ts in u.get("recent_pro_timestamps", []) if time.time() - float(ts) < 120.0]
+                est_tokens = int((len(prompt) + len(raw_text)) / 3) + (think_budget or 1024)
+                if "neon" in model_name or "carbon" in model_name:
+                    u["neon_calls_today"] = int(u.get("neon_calls_today", 0)) + 1
+                    u["neon_tokens_today"] = int(u.get("neon_tokens_today", 0)) + est_tokens
+                    ts_list = [ts for ts in u.get("recent_neon_timestamps", []) if time.time() - float(ts) < 120.0]
                     ts_list.append(time.time())
-                    u["recent_pro_timestamps"] = ts_list
+                    u["recent_neon_timestamps"] = ts_list
                 else:
                     u["flash_calls_today"] = int(u.get("flash_calls_today", 0)) + 1
                     u["flash_tokens_today"] = int(u.get("flash_tokens_today", 0)) + est_tokens
@@ -212,8 +219,9 @@ class SmartModelRouter:
 
             except Exception as e:
                 err_str = str(e)
-                if "pro" in model_name and ("404" in err_str or "NOT_FOUND" in err_str):
-                    self._pro_model_enabled_in_gcp = False
+                if "404" in err_str or "NOT_FOUND" in err_str:
+                    self._disabled_models.add(model_name)
+                    print(f"[SMART ROUTER] Model {model_name} not available, disabling: {err_str[:80]}")
                 else:
                     print(f"[SMART ROUTER FALLBACK] role={role_key} model={model_name} err={err_str[:120]}")
                 if "429" in err_str or "ResourceExhausted" in err_str or "quota" in err_str.lower():

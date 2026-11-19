@@ -12,8 +12,8 @@ PARAMS_FILE = BASE_DIR / "config" / "strategy_params.json"
 # Google Cloud Platform 設定
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID", "xauusd-ai-fund")
 GCP_REGION = os.getenv("GCP_REGION", "asia-northeast1")
-GCP_VERTEX_LOCATION = os.getenv("GCP_VERTEX_LOCATION", "us-central1")
-VERTEX_MODEL_NAME = os.getenv("VERTEX_MODEL_NAME", "gemini-2.5-flash")
+GCP_VERTEX_LOCATION = os.getenv("GCP_VERTEX_LOCATION", "global")
+VERTEX_MODEL_NAME = os.getenv("VERTEX_MODEL_NAME", "gemini-3.8-flash")
 
 # FRED API Key (米連邦準備銀行・予備)
 FRED_API_KEY = os.getenv("FRED_API_KEY", "509548acea13a9fa6cc1d6ae7e50f117")

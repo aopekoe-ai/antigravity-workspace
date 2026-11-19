@@ -30,7 +30,7 @@ Reflect these 3 core pillars:
 
 class AICommitteeEvaluator:
     """
-    【超省トークン型】AI合議体 定時分析エバリュエーター (Gemini 2.5 Flash)
+    【超省トークン型】AI合議体 定時分析エバリュエーター (Gemini 3.8 Flash)
     
     プロンプトを極限まで高密度化し、thinking_budget=0 で思考トークンを完全排除。
     旧仕様と同等のプロ品質（エグゼクティブ解説・デビルズ反論・プロデューサー助言）を
