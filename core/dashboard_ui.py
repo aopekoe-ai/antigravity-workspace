@@ -474,27 +474,34 @@ def get_dashboard_html() -> str:
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;">
           <div class="form-group">
             <div class="form-label"><span>最大同時保有ポジ数</span></div>
-            <select id="cfg-max-pos" class="form-select"><option value="1">1ポジ (単ポジ)</option><option value="2">2ポジ</option><option value="3" selected>3ポジ (3系統)</option></select>
+            <select id="cfg-max-pos" class="form-select">
+              <option value="1">1ポジ (単ポジ)</option>
+              <option value="2">2ポジ</option>
+              <option value="3" selected>3ポジ (3系統)</option>
+              <option value="5">5ポジ</option>
+              <option value="10">10ポジ</option>
+              <option value="0">0: 設定しない (無制限)</option>
+            </select>
           </div>
           <div class="form-group">
             <div class="form-label"><span>1トレードリスク (%)</span></div>
-            <input type="number" id="cfg-risk-pct" class="form-input" step="0.1" min="0.3" max="3.0" value="1.5">
+            <input type="number" id="cfg-risk-pct" class="form-input" step="0.1" min="0" value="1.5" placeholder="0で最小固定Lot">
           </div>
           <div class="form-group">
-            <div class="form-label"><span>日次最大DD停止 (%)</span></div>
-            <input type="number" id="cfg-dd-pct" class="form-input" step="0.5" min="1.0" max="6.0" value="3.0">
+            <div class="form-label"><span>日次最大DD停止 (%) <span style="font-size:10px;color:var(--gold);">(0で無効)</span></span></div>
+            <input type="number" id="cfg-dd-pct" class="form-input" step="0.5" min="0" value="3.0" placeholder="0で停止無効（上限なし）">
           </div>
           <div class="form-group">
-            <div class="form-label"><span>最大ロット上限 (Lot)</span></div>
-            <input type="number" id="cfg-max-lot" class="form-input" step="0.05" min="0.01" max="1.00" value="0.50">
+            <div class="form-label"><span>最大ロット上限 (Lot) <span style="font-size:10px;color:var(--gold);">(0で無制限)</span></span></div>
+            <input type="number" id="cfg-max-lot" class="form-input" step="0.05" min="0" value="0.50" placeholder="0で口座上限まで無制限">
           </div>
           <div class="form-group">
-            <div class="form-label"><span>許容スプレッド (pips)</span></div>
-            <input type="number" id="cfg-max-sp" class="form-input" step="0.2" min="1.5" max="5.0" value="3.0">
+            <div class="form-label"><span>許容スプレッド (pips) <span style="font-size:10px;color:var(--gold);">(0で無制限)</span></span></div>
+            <input type="number" id="cfg-max-sp" class="form-input" step="0.5" min="0" value="3.0" placeholder="0で制限なし（上限なし）">
           </div>
           <div class="form-group">
-            <div class="form-label"><span>連敗防止待機 (分)</span></div>
-            <input type="number" id="cfg-sl-cool" class="form-input" step="5" min="5" max="60" value="15">
+            <div class="form-label"><span>連敗防止待機 (分) <span style="font-size:10px;color:var(--gold);">(0で待機なし)</span></span></div>
+            <input type="number" id="cfg-sl-cool" class="form-input" step="1" min="0" value="15" placeholder="0で待機なし">
           </div>
           <div style="margin-top:14px;">
             <button class="btn btn-gold btn-block" onclick="confirmSaveControlConfig()">💾 運用パラメータを保存 (確認へ)</button>
@@ -1349,10 +1356,18 @@ function confirmSaveControlConfig() {
   const maxP = document.getElementById('cfg-max-pos').value;
   const risk = document.getElementById('cfg-risk-pct').value;
   const dd = document.getElementById('cfg-dd-pct').value;
+  const maxLot = document.getElementById('cfg-max-lot').value;
+  const sp = document.getElementById('cfg-max-sp').value;
   const dir = document.getElementById('cfg-owner-dir').value.trim();
+
+  const posTxt = Number(maxP) === 0 ? '無制限' : `${maxP}ポジ`;
+  const ddTxt = Number(dd) <= 0 ? '設定なし(無制限)' : `${dd}%`;
+  const spTxt = Number(sp) <= 0 ? '設定なし(無制限)' : `${sp} pips`;
+  const lotTxt = Number(maxLot) <= 0 ? '設定なし(口座上限)' : `${maxLot} Lot`;
+
   openConfirmModal(
     '💾 設定・改修方針の保存確認',
-    `以下の設定を保存し、本番BOTへ反映してよろしいですか？\n\n・稼働ロジック: 型A[${enA}] / 型B[${enB}] / SMC[${enS}]\n・最大同時ポジ数: ${maxP}ポジ (1回リスク ${risk}% / 日次DD停止 ${dd}%)\n・AI方針メモ: ${dir ? dir : '(指定なし)'}`,
+    `以下の設定を保存し、本番BOTへ反映してよろしいですか？\n\n・稼働ロジック: 型A[${enA}] / 型B[${enB}] / SMC[${enS}]\n・最大同時ポジ数: ${posTxt}\n・1回リスク: ${risk}%\n・日次最大DD停止: ${ddTxt}\n・ロット上限: ${lotTxt}\n・許容スプレッド: ${spTxt}\n・AI方針メモ: ${dir ? dir : '(指定なし)'}`,
     saveControlConfig
   );
 }

@@ -262,24 +262,29 @@ def run_trading_daemon():
             if "owner_directive_ja" in payload:
                 d_ctrl["owner_directive_ja"] = str(payload["owner_directive_ja"])
             if "sl_cooldown_minutes" in payload:
-                d_ctrl["sl_cooldown_minutes"] = max(1, min(120, int(payload["sl_cooldown_minutes"])))
+                d_ctrl["sl_cooldown_minutes"] = max(0, int(payload["sl_cooldown_minutes"]))
             if "daily_report_hour_jst" in payload:
                 d_ctrl["daily_report_hour_jst"] = max(0, min(23, int(payload["daily_report_hour_jst"])))
 
             if "max_concurrent_positions" in payload:
-                rm_cfg["max_concurrent_positions"] = max(1, min(3, int(payload["max_concurrent_positions"])))
+                val = int(payload["max_concurrent_positions"])
+                rm_cfg["max_concurrent_positions"] = val if val > 0 else 999
                 risk_manager.max_positions = rm_cfg["max_concurrent_positions"]
             if "risk_per_trade_percent" in payload:
-                rm_cfg["risk_per_trade_percent"] = max(0.2, min(3.5, float(payload["risk_per_trade_percent"])))
+                val = float(payload["risk_per_trade_percent"])
+                rm_cfg["risk_per_trade_percent"] = max(0.0, val)
                 risk_manager.risk_per_trade_pct = rm_cfg["risk_per_trade_percent"]
             if "max_daily_drawdown_percent" in payload:
-                rm_cfg["max_daily_drawdown_percent"] = max(1.0, min(8.0, float(payload["max_daily_drawdown_percent"])))
+                val = float(payload["max_daily_drawdown_percent"])
+                rm_cfg["max_daily_drawdown_percent"] = max(0.0, val)
                 risk_manager.max_daily_dd_pct = rm_cfg["max_daily_drawdown_percent"]
             if "max_lot_size" in payload:
-                rm_cfg["max_lot_size"] = max(0.01, min(2.0, float(payload["max_lot_size"])))
-                risk_manager.max_lot = rm_cfg["max_lot_size"]
+                val = float(payload["max_lot_size"])
+                rm_cfg["max_lot_size"] = max(0.0, val)
+                risk_manager.max_lot = rm_cfg["max_lot_size"] if val > 0 else 100.0
             if "max_allowed_spread_pips" in payload:
-                ex_cfg["max_allowed_spread_pips"] = max(1.0, min(5.0, float(payload["max_allowed_spread_pips"])))
+                val = float(payload["max_allowed_spread_pips"])
+                ex_cfg["max_allowed_spread_pips"] = max(0.0, val)
 
             ex_cfg["allowed_sessions_jst"] = _build_sessions_from_controls(d_ctrl)
 
@@ -689,7 +694,7 @@ def run_trading_daemon():
                             f"{signal.action} - {signal.setup_name} (確信度: {signal.confidence * 100:.0f}%, ロット倍率: {signal.lot_multiplier:.2f}x)"
                         )
 
-                        if current_spread > max_spread:
+                        if max_spread > 0 and current_spread > max_spread:
                             print(f"[REJECTED] スプレッド過大 ({current_spread} pips > {max_spread} pips). 正常化待機。")
                             review_engine.record_defense_event("spread_block")
                             quant_db.record_shadow_trade(

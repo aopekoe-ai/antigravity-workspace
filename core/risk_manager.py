@@ -123,8 +123,10 @@ class InstitutionalRiskManager:
         current_loss = self.daily_start_balance - acct["equity"]
         loss_pct = (current_loss / self.daily_start_balance) * 100.0
 
-        if loss_pct >= self.max_daily_dd_pct:
-            return False, f"日次最大ドローダウン限界突破 (-{loss_pct:.2f}% >= -{self.max_daily_dd_pct}%). 本日の取引を完全停止。"
+        # max_daily_dd_pct が 0 または未設定の場合は日次停止をスキップ（上限なし）
+        if self.max_daily_dd_pct is not None and self.max_daily_dd_pct > 0:
+            if loss_pct >= self.max_daily_dd_pct:
+                return False, f"日次最大ドローダウン限界突破 (-{loss_pct:.2f}% >= -{self.max_daily_dd_pct}%). 本日の取引を完全停止。"
         return True, "Normal"
 
     def has_open_positions(self, symbol: str) -> bool:
@@ -155,7 +157,9 @@ class InstitutionalRiskManager:
         pip_value_per_001_lot = 15.0
         calculated_lot = (risk_amount_jpy / (sl_distance_pips * (pip_value_per_001_lot / 0.01)))
 
-        rounded_lot = round(max(self.min_lot, min(self.max_lot, calculated_lot)), 2)
+        # max_lot が 0 または未設定の場合は上限なし（100.0 Lot）
+        effective_max = self.max_lot if (self.max_lot and self.max_lot > 0) else 100.0
+        rounded_lot = round(max(self.min_lot, min(effective_max, calculated_lot)), 2)
         return rounded_lot
 
     def apply_break_even_protection(self, symbol: str, pip_size: float = 0.10) -> Optional[str]:
