@@ -16,3 +16,12 @@ config/application_default_credentials.json
 *.json.bak
 *.key
 credentials.json
+*.py.bak
+analyze_bot_vs_manual.py
+check_d1_history.py
+check_syms.py
+deep_macro_analysis_2026.py
+test_symbols_rates.py
+verify_true_macro_2026.py
+patch_*.py
+setup_push.sh
