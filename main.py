@@ -153,17 +153,18 @@ def run_trading_daemon():
                             f"ヒゲ比率={dyn_params.get('wick_ratio_threshold')} / FVG最小ギャップ=${dyn_params.get('min_fvg_gap_dollars')} / ATR倍率={dyn_params.get('atr_sl_multiplier')}"
                         ),
                     })
-                cl_file = settings.BASE_DIR / "CHANGELOG.md"
-                if cl_file.exists():
-                    cl_txt = cl_file.read_text(encoding="utf-8")
-                    for sec in cl_txt.split("\n## ")[1:6]:
-                        lines = [ln.strip() for ln in sec.strip().splitlines() if ln.strip() and ln.strip() != "---"]
+                if review_engine.learning_file.exists():
+                    lj_txt = review_engine.learning_file.read_text(encoding="utf-8")
+                    for sec in reversed(lj_txt.split("\n### 📅 ")[1:]):
+                        lines = [ln.strip() for ln in sec.strip().splitlines() if ln.strip()]
                         if lines:
                             opt_history.append({
-                                "title": f"📌 {lines[0]}",
-                                "badge": "Git履歴記録済",
-                                "detail": "\n".join(lines[1:8]),
+                                "title": f"📅 {lines[0]}",
+                                "badge": "日次PDCA教訓・最適化ログ",
+                                "detail": "\n".join(lines[1:6]),
                             })
+                        if len(opt_history) >= 12:
+                            break
             except Exception:
                 pass
 
