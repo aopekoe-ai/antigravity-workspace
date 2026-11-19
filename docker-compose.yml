@@ -1,0 +1,51 @@
+services:
+  mt5-server:
+    image: lprett/mt5linux:latest
+    container_name: mt5-server
+    restart: unless-stopped
+    ports:
+      - "18080:8080"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1536M
+    networks:
+      - quant-net
+
+  trading-bot:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.bot
+    container_name: xauusd-quant-bot
+    restart: unless-stopped
+    depends_on:
+      - mt5-server
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+    volumes:
+      - ./config:/app/config
+      - ./core:/app/core
+      - ./strategies:/app/strategies
+      - ./ai:/app/ai
+      - ./notifications:/app/notifications
+      - ./logs:/app/logs
+      - ./main.py:/app/main.py
+    environment:
+      - PYTHONUNBUFFERED=1
+      - MT5_HOST=mt5-server
+      - MT5_PORT=18812
+      - MT5_LOGIN=277984494
+      - MT5_SERVER=Exness-MT5Trial5
+      - MT5_PASSWORD=aA!24861793
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/config/application_default_credentials.json
+      - GCP_PROJECT_ID=xauusd-ai-fund
+    networks:
+      - quant-net
+
+networks:
+  quant-net:
+    driver: bridge
