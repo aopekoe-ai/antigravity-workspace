@@ -1,0 +1,24 @@
+{
+  "line_budgets": {
+    "DECISIONS_SNAPSHOT.md": 90,
+    "current_task.md": 80,
+    "pipeline.md": 85,
+    "questions/INDEX.md": 45,
+    "questions/q01_intent_and_prd.md": 75,
+    "questions/q02_ooui_and_ia.md": 75,
+    "questions/q03_divergence_lenses.md": 80,
+    "questions/q04_edge_and_states.md": 75,
+    "questions/q05_design_and_code_tokens.md": 80,
+    "questions/q06_critic_rubric.md": 75,
+    "workspace/latest_rationale.md": 120,
+    "workspace/compact_handover.md": 65
+  },
+  "code_checks": {
+    "enabled": true,
+    "target_extensions": [".tsx", ".jsx", ".vue", ".svelte", ".html", ".css"],
+    "ignore_dirs": ["node_modules", ".git", ".next", "dist", "build", ".brain", ".agents", "coverage"],
+    "warn_hardcoded_hex_in_components": true,
+    "forbid_placeholder_text": ["Lorem ipsum", "TODO: FIXME_BEFORE_MERGE"],
+    "warn_img_without_alt": true
+  }
+}

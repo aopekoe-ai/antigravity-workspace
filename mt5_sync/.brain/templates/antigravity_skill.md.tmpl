@@ -1,0 +1,26 @@
+---
+name: portable-brain
+description: ??????OS型の文脈自動補完・タスク分解と、カナリー流の5段階思考再現（PRD精錬・OOUI情報設計・3案発散・トークン収束・独立Subagent監査）、`/compact` 引き継ぎ、GitHubクラウド容量削減を統合制御する共通ブレインスキル。
+---
+
+# Portable Brain Skill（Antigravity ネイティブ実行手順）
+
+## 1. 起動時 ＆ `/compact` 直後の最小コンテキスト復元
+1. `.brain/DECISIONS_SNAPSHOT.md`（確定仕様＋ボツ案リスト）と `.brain/current_task.md` を読む。
+2. ユーザーの短い依頼から背景を自動補完し、`.brain/current_task.md` のゴール・チェックリストを更新する。
+   - 仕様決定や不採用案（ボツ理由）が決まった際は、いつ `/compact` されても失われないようその場で Write-Through 保存する。
+
+## 2. 問い駆動パイプライン（Progressive Disclosure）
+`.brain/questions/INDEX.md` を確認し、**該当フェーズのファイルのみ**を順次参照して進める（不要なファイルは読まない）：
+- **Step 1-2 (要求 & OOUI)**: `q01_intent_and_prd.md`, `q02_ooui_and_ia.md`
+- **Step 3 (3案発散)**: `q03_divergence_lenses.md` を使い、構造の異なる3案を比較して `.brain/workspace/latest_rationale.md` を上書き更新する。
+- **Step 4 (本実装)**: `q04_edge_and_states.md`（5状態網羅）と `q05_design_and_code_tokens.md` を適用して実装する。
+
+## 3. 省トークン独立監査（Subagent 委譲）
+1. `python .brain/scripts/verify_gate.py` を実行して機械検査を通す。
+2. 重要なUI・機能実装では `invoke_subagent`（`TypeName: "research"`, `Model: "flash"`, `Role: "Independent Quality Critic"`）を起動し、**変更対象ファイルパスと `.brain/questions/q06_critic_rubric.md` のみ**を渡して85点以上か採点させる。
+
+## 4. 自己進化 ＆ ローカル容量削減（GitHub連携）
+- **ルール学習**: `python .brain/scripts/sync_web.py --learn "<抽象化した1行ルール>" --q <q01..q05|snapshot>`
+- **手動チェックポイント**: `python .brain/scripts/checkpoint.py`
+- **容量診断・GitHub退避**: `python .brain/scripts/cloud_slim.py --analyze | --clean-cache | --slim | --offload | --restore`

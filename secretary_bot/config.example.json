@@ -1,0 +1,13 @@
+{
+  "discord_bot_token": "YOUR_DISCORD_BOT_TOKEN_HERE",
+  "channel_id": 1567051729520824423,
+  "active_days_threshold": 7,
+  "morning_time": "09:00",
+  "evening_time": "18:00",
+  "project_directories": [
+    "C:\\Obsidian\\LLM Folder\\02_Projects",
+    "C:\\Obsidian\\LLM Folder\\01_Inbox"
+  ],
+  "persona_name": "有栖川 乃愛",
+  "auto_silent_if_no_reaction": true
+}

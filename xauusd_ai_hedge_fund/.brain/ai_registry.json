@@ -1,0 +1,55 @@
+{
+  "version": "1.1.0",
+  "default_github_repo": "https://github.com/aopekoe-ai/AI_brain.git",
+  "obsidian_archive_root": "C:\\Obsidian\\LLM Folder\\04_PortableBrain_Archives",
+  "obsidian_decisions_inbox": "C:\\Obsidian\\LLM Folder\\01_Inbox\\auto_decisions_latest.md",
+  "adapters": {
+    "antigravity": {
+      "label": "Google Antigravity (AGY 2.0)",
+      "type": "antigravity_bundle",
+      "files": [
+        ".agents/rules/brain-adapter.md",
+        ".agents/skills/portable-brain/SKILL.md",
+        ".agents/hooks.json"
+      ]
+    },
+    "claude": {
+      "label": "Claude Code (Anthropic CLI + Compact Hooks)",
+      "type": "claude_bundle",
+      "files": [
+        "CLAUDE.md",
+        ".claude/settings.json"
+      ]
+    },
+    "cursor": {
+      "label": "Cursor IDE",
+      "type": "markdown_marker",
+      "files": [".cursorrules"]
+    },
+    "windsurf": {
+      "label": "Windsurf IDE",
+      "type": "markdown_marker",
+      "files": [".windsurfrules"]
+    },
+    "codex": {
+      "label": "OpenAI Codex / AGENTS.md Standard",
+      "type": "markdown_marker",
+      "files": ["AGENTS.md"]
+    },
+    "copilot": {
+      "label": "GitHub Copilot",
+      "type": "markdown_marker",
+      "files": [".github/copilot-instructions.md"]
+    },
+    "cline": {
+      "label": "Cline / Roo Code",
+      "type": "markdown_marker",
+      "files": [".clinerules"]
+    },
+    "web": {
+      "label": "Grok / ChatGPT / Claude Web (Clipboard & Snippet)",
+      "type": "web_snippet",
+      "files": [".brain/web_bootstrap_prompt.md"]
+    }
+  }
+}

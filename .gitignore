@@ -1,0 +1,42 @@
+# ==========================================================
+# 既存の独立 Git リポジトリは除外（二重管理・干渉防止）
+# ==========================================================
+typescript-learning-platform/
+sns-news/
+portable-brain/
+
+# ==========================================================
+# キャッシュ・ビルド・仮想環境の除外
+# ==========================================================
+**/__pycache__/
+**/*.py[cod]
+**/node_modules/
+**/.venv/
+**/venv/
+**/*.tmp
+**/*.log
+
+# ==========================================================
+# 機密ファイル・トークン・実行時ステートの除外（GitHub Push Protection対策）
+# ==========================================================
+**/*.key
+**/*.pem
+**/.env
+**/.env.local
+**/credentials*.json
+**/system_state.json
+
+# 機密情報（Discord Token, MT5 Credentials）を含むファイル
+secretary_bot/config.json
+xauusd_ai_hedge_fund/config/settings.py
+xauusd_ai_hedge_fund/config.py
+xauusd_ai_hedge_fund/docker-compose.yml
+xauusd_ai_hedge_fund/test_mt5_remote.py
+xauusd_ai_hedge_fund/DECISIONS_SNAPSHOT.md
+mt5_sync/Bases/
+mt5_sync/Config/
+
+# OS固有ファイル
+Thumbs.db
+Desktop.ini
+.DS_Store
