@@ -934,7 +934,10 @@ function renderLogicSpec(st) {
   const smcRr = Number(spec.effective_smc_min_rr || 1.50);
   const wickTh = Number(spec.effective_wick_ratio || 0.25);
   const fvgGap = Number(spec.effective_min_fvg_gap || 0.40).toFixed(2);
-  const atrSlMult = Number(spec.effective_atr_sl_mult || 1.30);
+  const atrSlMult = Number(spec.effective_atr_sl_mult || 1.40);
+  const beRr = Number(spec.effective_be_trigger_rr || 1.15);
+  const trailMult = Number(spec.effective_trail_atr_mult || 1.15);
+  const trailCushionPips = Math.max(18.0, (atr * trailMult / 0.10)).toFixed(1);
 
   document.getElementById('spec-engines-container').innerHTML = `
     <div class="spec-box">
@@ -983,9 +986,9 @@ function renderLogicSpec(st) {
         <span class="badge bull">常時有効</span>
       </div>
       <ul class="spec-list">
-        <li><strong>① プロップ流・建値自動移動 (Break-Even):</strong> 各ポジションの含み益が<strong>初期SL幅と同等（RR 1:1以上、かつ最低25pips）</strong>に到達した瞬間、ブローカー側ハードSLを <span class="live-val">建値 + 2.0 pips</span> へ自動引き上げ（「負けゼロ」のフリーロール化）。</li>
-        <li><strong>② マクロ反転トレーリング利確:</strong> 含み益が <span class="live-val">M5 ATR × 1.1 (現在約 ${(atr*1.1/0.10).toFixed(1)} pips)</span> 以上乗った状態で、DXYと米金利がM5 EMA20を逆方向へ明確に割り込んだ場合、SLを <span class="live-val">現在価格 ± M5 ATR × 0.6</span> に引き上げて利益を確実に防衛。</li>
-        <li><strong>③ 同方向SL連敗防止クールダウン:</strong> 損切り（SL）被弾後、同じ方向への新規エントリーを <span class="live-val">${ctrl.sl_cooldown_minutes || 15}分間</span> 自動ロックし、急変動時の連続被弾を防止。</li>
+        <li><strong>① 建値自動移動 (Break-Even / 早すぎる建値刈り防止連動):</strong> 各ポジションの含み益が<strong>初期SL幅 × <span class="live-val">${beRr.toFixed(2)}倍 (かつ最低30pips)</span></strong>に到達した時点で、ブローカー側ハードSLを <span class="live-val">建値 + 2.5 pips</span> へ自動引き上げ。微益撤退が多発した場合は発動基準が自動拡大します。</li>
+        <li><strong>② マクロ反転トレーリング利確（反発ノイズ耐性連動）:</strong> 含み益が <span class="live-val">最低35pips (または M5 ATR × 1.35 = ${(Math.max(3.5, atr*1.35)/0.10).toFixed(1)} pips)</span> 以上乗った状態で先行指標が反転した場合、現在価格から <span class="live-val">M5 ATR × ${trailMult.toFixed(2)} (現在約 ${trailCushionPips} pips / 最低18pips)</span> の呼吸幅を残してSLを引き上げ（押し目・戻りの反発による早すぎる微益決済を防止＆自動最適化）。</li>
+        <li><strong>③ 狭すぎるSLの自動拡張 ＆ 同方向SL連敗防止:</strong> 短時間でのノイズ損切りが発生した際は最小SL幅（現在 <span class="live-val">${spec.effective_min_sl_pips || 22} pips</span>）とATR倍率が自動拡大（ロットは反比例縮小して損失額を固定）。損切り後は同方向を <span class="live-val">${ctrl.sl_cooldown_minutes || 15}分間</span> クールダウン。</li>
       </ul>
     </div>
   `;

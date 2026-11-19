@@ -197,9 +197,9 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
         m15_trend = market_data.get("m15_trend", "NEUTRAL")
         macro_state = market_data.get("macro_state") or {}
 
-        effective_min_sl_pips = max(18.0, round((atr_dollars * 1.0) / pip_size, 1))
-        effective_max_sl_pips = max(50.0, round((atr_dollars * 3.5) / pip_size, 1))
-        effective_min_fvg_gap = max(0.40, round(atr_dollars * 0.30, 2))
+        effective_min_sl_pips = max(20.0, float(self.min_sl_pips), round((atr_dollars * 1.15) / pip_size, 1))
+        effective_max_sl_pips = max(55.0, float(self.max_sl_pips), round((atr_dollars * 3.5) / pip_size, 1))
+        effective_min_fvg_gap = max(0.30, float(self.min_fvg_gap), round(atr_dollars * 0.30, 2))
 
         # 上位足トレンドフォロー制約（H1上昇中はBUYのみ、H1下降中はSELLのみ、H1中立時は双方向許可）
         allow_buy = (h1_trend != "BEARISH")
@@ -398,10 +398,12 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
 
                     if is_single_pinbar or is_combo_sweep:
                         sweep_h = max(c1['high'], c2['high'])
-                        sl_price = round(sweep_h + (atr_dollars * (self.atr_multiplier * 0.25)), 2)
-                        sl_pips = round((sl_price - current_bid) / pip_size, 1)
+                        raw_sl_price = round(sweep_h + (atr_dollars * (self.atr_multiplier * 0.35)), 2)
+                        raw_sl_pips = round((raw_sl_price - current_bid) / pip_size, 1)
+                        sl_pips = round(max(effective_min_sl_pips, raw_sl_pips), 1)
+                        sl_price = round(current_bid + (sl_pips * pip_size), 2)
 
-                        if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
+                        if sl_pips <= effective_max_sl_pips:
                             tp_pips = round(sl_pips * self.min_rr, 1)
                             tp_price = round(current_bid - (tp_pips * pip_size), 2)
                             rr = round(tp_pips / sl_pips, 2)
@@ -434,10 +436,12 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
 
                     if is_single_pinbar or is_combo_sweep:
                         sweep_l = min(c1['low'], c2['low'])
-                        sl_price = round(sweep_l - (atr_dollars * (self.atr_multiplier * 0.25)), 2)
-                        sl_pips = round((current_ask - sl_price) / pip_size, 1)
+                        raw_sl_price = round(sweep_l - (atr_dollars * (self.atr_multiplier * 0.35)), 2)
+                        raw_sl_pips = round((current_ask - raw_sl_price) / pip_size, 1)
+                        sl_pips = round(max(effective_min_sl_pips, raw_sl_pips), 1)
+                        sl_price = round(current_ask - (sl_pips * pip_size), 2)
 
-                        if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
+                        if sl_pips <= effective_max_sl_pips:
                             tp_pips = round(sl_pips * self.min_rr, 1)
                             tp_price = round(current_ask + (tp_pips * pip_size), 2)
                             rr = round(tp_pips / sl_pips, 2)
@@ -464,9 +468,11 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
         fvg = self._find_recent_fvg(df_m5) if smc_can_open else None
         if fvg:
             if allow_buy and fvg["type"] == "BULLISH_FVG" and (c1['low'] <= fvg["top"]) and (c1['close'] > fvg["bottom"]):
-                sl_price = round(fvg["bottom"] - (atr_dollars * 0.3), 2)
-                sl_pips = round((current_ask - sl_price) / pip_size, 1)
-                if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
+                raw_sl_price = round(fvg["bottom"] - (atr_dollars * (self.atr_multiplier * 0.35)), 2)
+                raw_sl_pips = round((current_ask - raw_sl_price) / pip_size, 1)
+                sl_pips = round(max(effective_min_sl_pips, raw_sl_pips), 1)
+                sl_price = round(current_ask - (sl_pips * pip_size), 2)
+                if sl_pips <= effective_max_sl_pips:
                     tp_pips = round(sl_pips * self.min_rr, 1)
                     tp_price = round(current_ask + (tp_pips * pip_size), 2)
                     rr = round(tp_pips / sl_pips, 2)
@@ -489,9 +495,11 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
                         return checked
 
             if allow_sell and fvg["type"] == "BEARISH_FVG" and (c1['high'] >= fvg["bottom"]) and (c1['close'] < fvg["top"]):
-                sl_price = round(fvg["top"] + (atr_dollars * 0.3), 2)
-                sl_pips = round((sl_price - current_bid) / pip_size, 1)
-                if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
+                raw_sl_price = round(fvg["top"] + (atr_dollars * (self.atr_multiplier * 0.35)), 2)
+                raw_sl_pips = round((raw_sl_price - current_bid) / pip_size, 1)
+                sl_pips = round(max(effective_min_sl_pips, raw_sl_pips), 1)
+                sl_price = round(current_bid + (sl_pips * pip_size), 2)
+                if sl_pips <= effective_max_sl_pips:
                     tp_pips = round(sl_pips * self.min_rr, 1)
                     tp_price = round(current_bid - (tp_pips * pip_size), 2)
                     rr = round(tp_pips / sl_pips, 2)
@@ -519,9 +527,11 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
             ema50 = float(df_m5['close'].ewm(span=50, adjust=False).mean().iloc[-2])
 
             if allow_buy and ema20 > ema50 and (c1['low'] <= ema20 * 1.0006) and (c1['close'] > ema20) and (c1['close'] >= c1['open']):
-                sl_price = round(min(c1['low'], ema50) - (atr_dollars * 0.3), 2)
-                sl_pips = round((current_ask - sl_price) / pip_size, 1)
-                if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
+                raw_sl_price = round(min(c1['low'], ema50) - (atr_dollars * (self.atr_multiplier * 0.35)), 2)
+                raw_sl_pips = round((current_ask - raw_sl_price) / pip_size, 1)
+                sl_pips = round(max(effective_min_sl_pips, raw_sl_pips), 1)
+                sl_price = round(current_ask - (sl_pips * pip_size), 2)
+                if sl_pips <= effective_max_sl_pips:
                     tp_pips = round(sl_pips * self.min_rr, 1)
                     tp_price = round(current_ask + (tp_pips * pip_size), 2)
                     rr = round(tp_pips / sl_pips, 2)
@@ -544,9 +554,11 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
                         return checked
 
             if allow_sell and ema20 < ema50 and (c1['high'] >= ema20 * 0.9994) and (c1['close'] < ema20) and (c1['close'] <= c1['open']):
-                sl_price = round(max(c1['high'], ema50) + (atr_dollars * 0.3), 2)
-                sl_pips = round((sl_price - current_bid) / pip_size, 1)
-                if effective_min_sl_pips <= sl_pips <= effective_max_sl_pips:
+                raw_sl_price = round(max(c1['high'], ema50) + (atr_dollars * (self.atr_multiplier * 0.35)), 2)
+                raw_sl_pips = round((raw_sl_price - current_bid) / pip_size, 1)
+                sl_pips = round(max(effective_min_sl_pips, raw_sl_pips), 1)
+                sl_price = round(current_bid + (sl_pips * pip_size), 2)
+                if sl_pips <= effective_max_sl_pips:
                     tp_pips = round(sl_pips * self.min_rr, 1)
                     tp_price = round(current_bid - (tp_pips * pip_size), 2)
                     rr = round(tp_pips / sl_pips, 2)

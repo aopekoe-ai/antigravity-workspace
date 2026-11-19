@@ -162,18 +162,24 @@ class InstitutionalRiskManager:
         rounded_lot = round(max(self.min_lot, min(effective_max, calculated_lot)), 2)
         return rounded_lot
 
-    def apply_break_even_protection(self, symbol: str, pip_size: float = 0.10) -> Optional[str]:
+    def apply_break_even_protection(
+        self,
+        symbol: str,
+        pip_size: float = 0.10,
+        be_trigger_rr: float = 1.15,
+    ) -> Optional[str]:
         """
-        【複数ポジション完全対応】建値移動 (Break-Even) 自動スライド
-        保有中の全ポジション（最大3ポジ）を個別に監視し、それぞれ未実現利益が「初期SL幅と同等（RR 1:1以上、最低25pips）」
-        に達した時点でSLを「建値 + 2pips」へ引き上げる。
+        【複数ポジション完全対応・反発ノイズ耐性強化】建値移動 (Break-Even) 自動スライド
+        保有中の全ポジションを個別に監視し、未実現利益が「初期SL幅 × be_trigger_rr（標準1.15倍、最低30pips）」
+        に達した時点でSLを「建値 + 2.5pips」へ引き上げる。微益撤退が多発した場合は be_trigger_rr が自動拡大する。
         """
         positions = mt5.positions_get(symbol=symbol)
         if not positions or len(positions) == 0:
             return None
 
         triggered_logs: List[str] = []
-        be_buffer_dollars = 2.0 * pip_size
+        be_buffer_dollars = 2.5 * pip_size
+        eff_rr = max(0.95, float(be_trigger_rr or 1.15))
 
         for pos in positions:
             ticket = pos.ticket
@@ -185,9 +191,9 @@ class InstitutionalRiskManager:
             if current_sl > 0:
                 initial_sl_dist = abs(open_price - current_sl)
             else:
-                initial_sl_dist = 25.0 * pip_size
+                initial_sl_dist = 30.0 * pip_size
 
-            be_trigger_dollars = max(25.0 * pip_size, initial_sl_dist * 0.95)
+            be_trigger_dollars = max(30.0 * pip_size, initial_sl_dist * eff_rr)
 
             if pos_type == 0:  # BUY
                 profit_dollars = current_price - open_price
@@ -202,7 +208,7 @@ class InstitutionalRiskManager:
                     }
                     res = mt5.order_send(req)
                     if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-                        triggered_logs.append(f"BUY #{ticket} RR1:1到達による建値移動完了 (SL -> ${new_sl:.2f})")
+                        triggered_logs.append(f"BUY #{ticket} RR1:{eff_rr:.2f}到達による建値移動完了 (SL -> ${new_sl:.2f})")
             else:  # SELL
                 profit_dollars = open_price - current_price
                 new_sl = round(open_price - be_buffer_dollars, 2)
@@ -216,7 +222,7 @@ class InstitutionalRiskManager:
                     }
                     res = mt5.order_send(req)
                     if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-                        triggered_logs.append(f"SELL #{ticket} RR1:1到達による建値移動完了 (SL -> ${new_sl:.2f})")
+                        triggered_logs.append(f"SELL #{ticket} RR1:{eff_rr:.2f}到達による建値移動完了 (SL -> ${new_sl:.2f})")
 
         return " | ".join(triggered_logs) if triggered_logs else None
 
@@ -226,11 +232,13 @@ class InstitutionalRiskManager:
         pip_size: float,
         macro_state: Optional[Dict[str, Any]],
         atr_m5_dollars: float,
+        trail_atr_mult: float = 1.15,
     ) -> Optional[str]:
         """
-        【複数ポジション完全対応】マクロ反転トレーリング防御
-        保有中の全ポジション（最大3ポジ）を個別に監視し、含み益が十分に乗った状態で
-        先行指標の追い風が反転した際、SLをタイトに引き上げて利益を防衛する。
+        【複数ポジション完全対応・トレール反発刈り防止】マクロ反転トレーリング防御
+        含み益が十分（最低35pips または 1.35×M5 ATR）に乗った状態で先行指標が反転した際、
+        現在価格から「最低18pips または trail_atr_mult×M5 ATR」の呼吸幅（クッション）を残してSLを追従させる。
+        トレール直後の反発で微益決済されるケースが多い場合、自己最適化により trail_atr_mult が自動で広がる。
         """
         if not macro_state:
             return None
@@ -240,8 +248,9 @@ class InstitutionalRiskManager:
             return None
 
         triggered_logs: List[str] = []
-        min_profit_dollars = max(25.0 * pip_size, atr_m5_dollars * 1.1)
-        trail_offset = max(8.0 * pip_size, atr_m5_dollars * 0.6)
+        eff_mult = max(0.75, float(trail_atr_mult or 1.15))
+        min_profit_dollars = max(35.0 * pip_size, atr_m5_dollars * 1.35)
+        trail_offset = max(18.0 * pip_size, atr_m5_dollars * eff_mult)
 
         for pos in positions:
             ticket = pos.ticket
@@ -254,7 +263,7 @@ class InstitutionalRiskManager:
                 profit_dollars = current_price - open_price
                 if profit_dollars >= min_profit_dollars:
                     new_sl = round(current_price - trail_offset, 2)
-                    if new_sl > open_price + (3.0 * pip_size) and (current_sl == 0.0 or new_sl > current_sl + pip_size):
+                    if new_sl > open_price + (8.0 * pip_size) and (current_sl == 0.0 or new_sl > current_sl + (2.0 * pip_size)):
                         req = {
                             "action": mt5.TRADE_ACTION_SLTP,
                             "position": ticket,
@@ -264,13 +273,13 @@ class InstitutionalRiskManager:
                         }
                         res = mt5.order_send(req)
                         if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-                            triggered_logs.append(f"BUY #{ticket} マクロ反転により利益防衛トレーリング (SL -> ${new_sl:.2f})")
+                            triggered_logs.append(f"BUY #{ticket} マクロ反転トレーリング (幅:{eff_mult:.2f}xATR, SL -> ${new_sl:.2f})")
 
             elif pos_type == 1 and macro_state.get("macro_reversed_against_sell"):
                 profit_dollars = open_price - current_price
                 if profit_dollars >= min_profit_dollars:
                     new_sl = round(current_price + trail_offset, 2)
-                    if new_sl < open_price - (3.0 * pip_size) and (current_sl == 0.0 or new_sl < current_sl - pip_size):
+                    if new_sl < open_price - (8.0 * pip_size) and (current_sl == 0.0 or new_sl < current_sl - (2.0 * pip_size)):
                         req = {
                             "action": mt5.TRADE_ACTION_SLTP,
                             "position": ticket,
@@ -280,6 +289,6 @@ class InstitutionalRiskManager:
                         }
                         res = mt5.order_send(req)
                         if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-                            triggered_logs.append(f"SELL #{ticket} マクロ反転により利益防衛トレーリング (SL -> ${new_sl:.2f})")
+                            triggered_logs.append(f"SELL #{ticket} マクロ反転トレーリング (幅:{eff_mult:.2f}xATR, SL -> ${new_sl:.2f})")
 
         return " | ".join(triggered_logs) if triggered_logs else None

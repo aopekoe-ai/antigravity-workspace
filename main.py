@@ -123,16 +123,18 @@ def run_trading_daemon():
             w_study = weekend_lab.load_latest_study()
             rec_w = w_study.get("recommended_weights") or {}
             live_spec = {
-                "effective_min_sl_pips": max(18.0, round((atr_d * 1.0) / 0.10, 1)),
-                "effective_max_sl_pips": max(50.0, round((atr_d * 3.5) / 0.10, 1)),
-                "effective_min_fvg_gap": max(0.40, round(atr_d * 0.30, 2)),
+                "effective_min_sl_pips": max(20.0, float(adapted_now.get("min_sl_pips", 22.0)), round((atr_d * 1.15) / 0.10, 1)),
+                "effective_max_sl_pips": max(55.0, float(adapted_now.get("max_sl_pips", 60.0)), round((atr_d * 3.5) / 0.10, 1)),
+                "effective_min_fvg_gap": max(0.30, float(adapted_now.get("min_fvg_gap_dollars", 0.30)), round(atr_d * 0.30, 2)),
                 "effective_momentum_z_threshold": adapted_now.get("momentum_z_threshold", 1.50),
-                "effective_macro_sl_atr_mult": adapted_now.get("macro_sl_atr_multiplier", 1.70),
+                "effective_macro_sl_atr_mult": adapted_now.get("macro_sl_atr_multiplier", 1.75),
                 "effective_macro_min_rr": adapted_now.get("macro_min_rr", 1.80),
                 "effective_smt_min_rr": adapted_now.get("smt_min_rr", 2.00),
                 "effective_smc_min_rr": adapted_now.get("min_risk_reward_ratio", 1.50),
                 "effective_wick_ratio": adapted_now.get("wick_ratio_threshold", 0.25),
-                "effective_atr_sl_mult": adapted_now.get("atr_sl_multiplier", 1.30),
+                "effective_atr_sl_mult": adapted_now.get("atr_sl_multiplier", 1.40),
+                "effective_be_trigger_rr": adapted_now.get("be_trigger_rr", 1.15),
+                "effective_trail_atr_mult": adapted_now.get("trail_atr_multiplier", 1.15),
                 "dxy_weight": rec_w.get("dxy_weight", 0.70),
                 "yield_weight": rec_w.get("yield_weight", 0.30),
             }
@@ -150,7 +152,8 @@ def run_trading_daemon():
                             f"変更根拠: {raw_dp.get('reason', '日次自動較正')}\n"
                             f"現在ベース値: 型A_Z閾値={dyn_params.get('momentum_z_threshold')}σ / 型A_RR=1:{dyn_params.get('macro_min_rr')} / "
                             f"型B_RR=1:{dyn_params.get('smt_min_rr')} / SMC_RR=1:{dyn_params.get('min_risk_reward_ratio')} / "
-                            f"ヒゲ比率={dyn_params.get('wick_ratio_threshold')} / FVG最小ギャップ=${dyn_params.get('min_fvg_gap_dollars')} / ATR倍率={dyn_params.get('atr_sl_multiplier')}"
+                            f"最小SL幅={dyn_params.get('min_sl_pips', 22.0)}pips / ATR倍率={dyn_params.get('atr_sl_multiplier')} / "
+                            f"建値移動RR=1:{dyn_params.get('be_trigger_rr', 1.15)} / トレール追従幅={dyn_params.get('trail_atr_multiplier', 1.15)}xATR"
                         ),
                     })
                 if review_engine.learning_file.exists():
@@ -592,7 +595,11 @@ def run_trading_daemon():
                     continue
 
                 # --- B-2. 建値移動 (Break-Even) ＆ マクロ反転トレーリング防御 ---
-                be_result = risk_manager.apply_break_even_protection(symbol, market_state["pip_size"])
+                be_result = risk_manager.apply_break_even_protection(
+                    symbol=symbol,
+                    pip_size=market_state["pip_size"],
+                    be_trigger_rr=float(adapted_params.get("be_trigger_rr", 1.15)),
+                )
                 if be_result:
                     print(f"[BREAK-EVEN TRIGGERED] {be_result}")
                     review_engine.record_defense_event("break_even")
@@ -602,6 +609,7 @@ def run_trading_daemon():
                     pip_size=market_state["pip_size"],
                     macro_state=macro_state,
                     atr_m5_dollars=market_state.get("atr_m5_dollars", 1.5),
+                    trail_atr_mult=float(adapted_params.get("trail_atr_multiplier", 1.15)),
                 )
                 if trail_result:
                     print(f"[MACRO TRAILING TRIGGERED] {trail_result}")

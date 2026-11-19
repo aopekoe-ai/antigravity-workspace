@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 from pathlib import Path
@@ -53,31 +54,31 @@ class DynamicParamOptimizer:
             "description": "FVG検出の最小ギャップ（ドル）"
         },
         "min_sl_pips": {
-            "min": 12.0,
-            "max": 25.0,
-            "default": 18.0,
-            "max_step": 3.0,
-            "description": "最小SL幅（pips）"
+            "min": 18.0,
+            "max": 45.0,
+            "default": 22.0,
+            "max_step": 4.0,
+            "description": "最小SL幅（pips・狭すぎる損切り防止）"
         },
         "max_sl_pips": {
             "min": 45.0,
-            "max": 80.0,
-            "default": 55.0,
+            "max": 90.0,
+            "default": 60.0,
             "max_step": 5.0,
             "description": "最大SL幅（pips）"
         },
         "atr_sl_multiplier": {
             "min": 1.0,
-            "max": 2.0,
-            "default": 1.3,
+            "max": 2.5,
+            "default": 1.40,
             "max_step": 0.15,
-            "description": "SMC ATR SL倍率"
+            "description": "SMC ATR SL倍率（ノイズ狩り耐性）"
         },
         "max_allowed_spread_pips": {
             "min": 2.0,
-            "max": 3.5,
+            "max": 15.0,
             "default": 3.0,
-            "max_step": 0.3,
+            "max_step": 0.5,
             "description": "許容最大スプレッド（pips）"
         },
         "momentum_z_threshold": {
@@ -89,8 +90,8 @@ class DynamicParamOptimizer:
         },
         "macro_sl_atr_multiplier": {
             "min": 1.40,
-            "max": 2.20,
-            "default": 1.70,
+            "max": 2.60,
+            "default": 1.75,
             "max_step": 0.15,
             "description": "型AマクロモメンタムM5 ATR SL倍率"
         },
@@ -107,6 +108,20 @@ class DynamicParamOptimizer:
             "default": 2.00,
             "max_step": 0.20,
             "description": "型B SMTダイバージェンス最小RR比"
+        },
+        "be_trigger_rr": {
+            "min": 0.95,
+            "max": 1.80,
+            "default": 1.15,
+            "max_step": 0.15,
+            "description": "建値移動(BE)発動の必要RR倍率（早すぎる建値刈り防止）"
+        },
+        "trail_atr_multiplier": {
+            "min": 0.80,
+            "max": 1.85,
+            "default": 1.15,
+            "max_step": 0.15,
+            "description": "マクロ反転トレール時のSL追従距離（M5 ATR倍率・反発ノイズ耐性）"
         },
     }
 
@@ -179,10 +194,13 @@ class DynamicParamOptimizer:
             regime = "REGIME_GEO_VOLATILITY"
             adapted["atr_sl_multiplier"] = self._clamp("atr_sl_multiplier", adapted["atr_sl_multiplier"] + 0.15)
             adapted["macro_sl_atr_multiplier"] = self._clamp("macro_sl_atr_multiplier", adapted["macro_sl_atr_multiplier"] + 0.15)
+            adapted["min_sl_pips"] = self._clamp("min_sl_pips", adapted.get("min_sl_pips", 22.0) + 4.0)
             adapted["min_risk_reward_ratio"] = self._clamp("min_risk_reward_ratio", adapted["min_risk_reward_ratio"] + 0.20)
             adapted["macro_min_rr"] = self._clamp("macro_min_rr", adapted["macro_min_rr"] + 0.20)
+            adapted["be_trigger_rr"] = self._clamp("be_trigger_rr", adapted.get("be_trigger_rr", 1.15) + 0.15)
+            adapted["trail_atr_multiplier"] = self._clamp("trail_atr_multiplier", adapted.get("trail_atr_multiplier", 1.15) + 0.20)
 
-        # 2. 先行指標＋H1トレンド完全一致の強トレンド相場（利を伸ばし、型A感度を上げる）
+        # 2. 先行指標＋H1トレンド完全一致の強トレンド相場（利を伸ばし、トレール幅に余裕を持たせて押し目反発刈りを防ぐ）
         elif htf_macro_aligned:
             regime = "REGIME_MACRO_TREND"
             adapted["min_risk_reward_ratio"] = self._clamp("min_risk_reward_ratio", adapted["min_risk_reward_ratio"] + 0.25)
@@ -190,6 +208,8 @@ class DynamicParamOptimizer:
             adapted["smt_min_rr"] = self._clamp("smt_min_rr", adapted["smt_min_rr"] + 0.20)
             adapted["momentum_z_threshold"] = self._clamp("momentum_z_threshold", adapted["momentum_z_threshold"] - 0.10)
             adapted["atr_sl_multiplier"] = self._clamp("atr_sl_multiplier", adapted["atr_sl_multiplier"] + 0.08)
+            adapted["be_trigger_rr"] = self._clamp("be_trigger_rr", adapted.get("be_trigger_rr", 1.15) + 0.10)
+            adapted["trail_atr_multiplier"] = self._clamp("trail_atr_multiplier", adapted.get("trail_atr_multiplier", 1.15) + 0.15)
 
         # 3. 先行指標ねじれ（DXYと金利が逆行）またはレンジ錯綜相場（確実な早めの利確＋ダマシブレイク防御）
         elif macro_conflict:
@@ -197,6 +217,7 @@ class DynamicParamOptimizer:
             adapted["min_risk_reward_ratio"] = self._clamp("min_risk_reward_ratio", adapted["min_risk_reward_ratio"] - 0.10)
             adapted["momentum_z_threshold"] = self._clamp("momentum_z_threshold", adapted["momentum_z_threshold"] + 0.15)
             adapted["wick_ratio_threshold"] = self._clamp("wick_ratio_threshold", adapted["wick_ratio_threshold"] - 0.02)
+            adapted["be_trigger_rr"] = self._clamp("be_trigger_rr", adapted.get("be_trigger_rr", 1.15) - 0.05)
 
         # 4. 通常順張りバランス相場
         else:
@@ -212,7 +233,8 @@ class DynamicParamOptimizer:
     ) -> Dict[str, Any]:
         """
         直近の確定クオンツトレード実績（最大50件）から数理的にベースパラメータ微調整案を算出。
-        AI提案と統合、またはAIオフライン時の自律キャリブレーションとして機能する。
+        - 【機能A】トレール・建値移動直後の反発による「微益撤退（早すぎるトレール刈り）」の自動検知＆トレール幅・BE発動タイミング拡大
+        - 【機能B】損切幅が狭すぎてすぐ損切りされる「短時間ノイズSL（早すぎる損切り）」の自動検知＆最小SL幅・ATR倍率拡大
         """
         current = self.load_active_params()
         proposals: Dict[str, float] = {}
@@ -223,6 +245,11 @@ class DynamicParamOptimizer:
 
         wins = [t for t in recent if float(t.get("profit", 0)) > 0]
         losses = [t for t in recent if float(t.get("profit", 0)) < 0]
+        true_losses = [t for t in recent if float(t.get("profit", 0)) < -300]
+        # 微益・建値撤退（トレールやBEで小さく決済されたトレード: -300円〜+2,500円）
+        small_trail_exits = [t for t in recent if -300 <= float(t.get("profit", 0)) <= 2500]
+        full_tp_wins = [t for t in recent if float(t.get("profit", 0)) > 2500]
+
         win_rate = len(wins) / len(recent) if recent else 0.5
 
         # 1. 取引頻度が少なすぎる場合（5回未満）、機会確保のため感度閾値を小幅緩和
@@ -234,7 +261,6 @@ class DynamicParamOptimizer:
                 "momentum_z_threshold", current["momentum_z_threshold"] - 0.05
             )
         elif today_trade_count > 16 and win_rate < 0.50:
-            # 過剰取引で勝率が低下している場合はわずかに厳選
             proposals["wick_ratio_threshold"] = self._clamp(
                 "wick_ratio_threshold", current["wick_ratio_threshold"] + 0.03
             )
@@ -242,17 +268,54 @@ class DynamicParamOptimizer:
                 "momentum_z_threshold", current["momentum_z_threshold"] + 0.05
             )
 
-        # 2. 勝率・損益構造に応じたSL倍率＆RR微調整
-        if len(recent) >= 10:
-            if win_rate >= 0.58:
-                proposals["min_risk_reward_ratio"] = self._clamp(
-                    "min_risk_reward_ratio", current["min_risk_reward_ratio"] + 0.05
+        # 2. 【トレール直後の反発・微益撤退の自動修正】
+        # 負け以外のトレードのうち、トレールや建値移動で小さく降ろされた割合が30%以上（または2件以上）ある場合、
+        # トレール追従幅(trail_atr_multiplier)と建値移動タイミング(be_trigger_rr)を広げて押し目・戻りの反発に耐えさせる
+        non_losing_count = len(small_trail_exits) + len(full_tp_wins)
+        if len(small_trail_exits) >= 2 and non_losing_count > 0:
+            premature_ratio = len(small_trail_exits) / non_losing_count
+            if premature_ratio >= 0.30:
+                proposals["trail_atr_multiplier"] = self._clamp(
+                    "trail_atr_multiplier", current.get("trail_atr_multiplier", 1.15) + 0.15
                 )
-            elif win_rate < 0.45 and len(losses) >= 6:
-                # 損切り貧乏を防ぐためATR SL倍率をわずかに広げてノイズ耐性強化
-                proposals["atr_sl_multiplier"] = self._clamp(
-                    "atr_sl_multiplier", current["atr_sl_multiplier"] + 0.05
+                proposals["be_trigger_rr"] = self._clamp(
+                    "be_trigger_rr", current.get("be_trigger_rr", 1.15) + 0.12
                 )
+
+        # 3. 【損切幅が小さすぎてすぐ損切りされる現象（短時間ノイズSL）の自動修正】
+        # エントリーから15分以内にSL到達したトレード、または初期SL幅が25pips未満で狩られたトレードをカウント
+        fast_or_tight_sl_count = 0
+        for t in true_losses:
+            is_fast = False
+            try:
+                t_open = datetime.datetime.strptime(str(t.get("time", ""))[:19], "%Y-%m-%d %H:%M:%S")
+                t_close = datetime.datetime.strptime(str(t.get("close_time", ""))[:19], "%Y-%m-%d %H:%M:%S")
+                hold_min = (t_close - t_open).total_seconds() / 60.0
+                if 0 <= hold_min <= 18.0:
+                    is_fast = True
+            except Exception:
+                pass
+            sl_px = float(t.get("sl") or 0.0)
+            en_px = float(t.get("price") or 0.0)
+            sl_pips = abs(en_px - sl_px) / 0.10 if (sl_px > 0 and en_px > 0) else 30.0
+            if is_fast or sl_pips < 25.0:
+                fast_or_tight_sl_count += 1
+
+        if fast_or_tight_sl_count >= 2 or (len(recent) >= 6 and win_rate < 0.48 and len(true_losses) >= 3):
+            # 損切幅が狭すぎてノイズで刈られているため、最小SL幅(min_sl_pips)とATR SL倍率を同時に引き上げる
+            proposals["min_sl_pips"] = self._clamp(
+                "min_sl_pips", current.get("min_sl_pips", 22.0) + 3.0
+            )
+            proposals["atr_sl_multiplier"] = self._clamp(
+                "atr_sl_multiplier", current.get("atr_sl_multiplier", 1.40) + 0.12
+            )
+            proposals["macro_sl_atr_multiplier"] = self._clamp(
+                "macro_sl_atr_multiplier", current.get("macro_sl_atr_multiplier", 1.75) + 0.12
+            )
+        elif len(recent) >= 10 and win_rate >= 0.60 and len(full_tp_wins) >= 5:
+            proposals["min_risk_reward_ratio"] = self._clamp(
+                "min_risk_reward_ratio", current["min_risk_reward_ratio"] + 0.05
+            )
 
         return proposals
 
