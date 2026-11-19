@@ -280,14 +280,16 @@ class DualMacroEngine:
             and (now_ts - float(tv_hb.get("received_at", 0.0))) <= tv_hb_ttl
         )
 
-        # 5. マクロバイアススコア統合（-1.0 = ゴールド強弱気 〜 +1.0 = ゴールド強強気）
+        # 5. マクロバイアススコア統合（週末自動検証で最適化されたDXY/金利ウェイトを動的適用）
+        w_dxy = float(cfg.get("dxy_weight", 0.45 if tv_hb_active else 0.50))
+        w_yield = float(cfg.get("yield_weight", 1.0 - w_dxy))
         if tv_hb_active:
             active_source = "TV_WEBHOOK"
             dxy_z = float(tv_hb.get("dxy_z", 0.0))
             yield_z = float(tv_hb.get("us10y_z", 0.0))
             raw_bias = float(tv_hb.get("bias_score", 0.0))
             if raw_bias == 0.0 and (dxy_z != 0.0 or yield_z != 0.0):
-                raw_bias = math.tanh((-0.45 * dxy_z - 0.55 * yield_z) / 2.0)
+                raw_bias = math.tanh((-w_dxy * dxy_z - w_yield * yield_z) / 2.0)
             if is_geopolitical_risk_off:
                 raw_bias = min(1.0, raw_bias + 0.30)
             macro_bias_score = round(max(-1.0, min(1.0, raw_bias)), 3)
@@ -306,7 +308,7 @@ class DualMacroEngine:
             dxy_z = m_dxy["z"]
             yield_z = m_jpy["z"]  # USDJPYを米金利プロキシとして利用
             geo_boost = 0.35 if is_geopolitical_risk_off else 0.0
-            raw_score = math.tanh((-0.50 * dxy_z - 0.50 * yield_z) / 2.0) + geo_boost
+            raw_score = math.tanh((-w_dxy * dxy_z - w_yield * yield_z) / 2.0) + geo_boost
             macro_bias_score = round(max(-1.0, min(1.0, raw_score)), 3)
             macro_rev_against_buy = (
                 m_dxy["above_m5_ema20"]

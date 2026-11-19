@@ -7,19 +7,38 @@ from core.data_engine import MarketDataEngine
 from core.risk_manager import InstitutionalRiskManager
 from core.webhook_server import MacroWebhookStore, TVWebhookServer
 from core.macro_engine import DualMacroEngine
+from core.weekend_research_engine import WeekendResearchEngine
 from strategies.smc_liquidity_strategy import SMCLiquiditySweepStrategy
 from ai.macro_nlp_guard import MacroNLPGuard
 from ai.committee_evaluator import AICommitteeEvaluator
 from core.review_engine import ReviewEngine
 from notifications.discord_manager import DiscordManager
 
+JST = datetime.timezone(datetime.timedelta(hours=9))
+
+
+def is_weekend_market_closed(now_utc: datetime.datetime) -> bool:
+    """
+    全市場休場判定（金曜 22:00 UTC [土曜 07:00 JST] 〜 日曜 22:00 UTC [月曜 07:00 JST]）
+    休場中はトレード関連のDiscord定時通知・AI合議体呼び出しを完全停止する。
+    """
+    wd = now_utc.weekday()  # 0:Mon ... 4:Fri, 5:Sat, 6:Sun
+    if wd == 4 and now_utc.hour >= 22:
+        return True
+    if wd == 5:
+        return True
+    if wd == 6 and now_utc.hour < 22:
+        return True
+    return False
+
 
 def run_trading_daemon():
     """
-    【VPS常駐型】24時間リアルタイム・クオンツ取引エンジン v9.0 (Step 1〜3 完全統合版)
+    【VPS常駐型】24時間リアルタイム・クオンツ取引エンジン v9.0 (Step 1〜3 ＋ 週末自動検証研究室 完全統合版)
     - Step 1: RR 1:1 建値移動・M5 ATR動的スケーリング・同方向連続SLループ防止
     - Step 2: 3系統ハイブリッド（SMC + 型Aマクロモメンタム + 型B SMT）・TV Webhook主系 + MT5 M1自動フェイルオーバー
     - Step 3: 先行指標レジーム連動リアルタイム自己最適化・MT5決済履歴完全同期・長期ログローテーション保全
+    - 週末研究室: 土日の全市場休場中はトレードDiscord通知を完全停止し、相関・複合条件・リードラグ自動検証を実行
     """
     print("==================================================================")
     print("🤖 Institutional SMC + Macro Hybrid Trading System v9.0 Starting...")
@@ -53,6 +72,7 @@ def run_trading_daemon():
     )
     data_engine = MarketDataEngine(symbol=symbol)
     macro_engine = DualMacroEngine(webhook_store=webhook_store, config=macro_cfg)
+    weekend_lab = WeekendResearchEngine()
     risk_manager = InstitutionalRiskManager(params.get("risk_management", {}))
     strategy = SMCLiquiditySweepStrategy(params=params)
     ai_guard = MacroNLPGuard(cache_ttl_minutes=params.get("ai_guard", {}).get("cache_ttl_minutes", 20))
@@ -64,19 +84,25 @@ def run_trading_daemon():
         print("[FATAL ERROR] MT5への初期接続に失敗しました。MT5が起動しているか確認してください。")
         return
 
-    # Step 3: 起動時に過去30日分のMT5決済履歴とジャーナルを完全突合＆ログローテーション保全
+    # 起動時に過去30日分のMT5決済履歴とジャーナルを完全突合＆ログローテーション保全
     review_engine.reconcile_with_mt5_history(days=30)
     review_engine.log_maintainer.run_maintenance()
 
+    # 初回起動時に週末検証データ（weekend_macro_study.json）が未生成なら即座にベースライン検証を実行
+    if not weekend_lab.study_file.exists():
+        weekend_lab.run_weekend_study()
+
     print(f"[SYSTEM READY] 対象銘柄: {symbol}, 戦略: {strategy.name}")
-    print("[SYSTEM READY] 3系統ハイブリッド ＋ レジーム連動自己最適化スキャン開始...")
+    print("[SYSTEM READY] 3系統ハイブリッド ＋ レジーム連動自己最適化 ＋ 週末自動検証ラボ 稼働開始...")
 
     last_hourly_report_hour = -1
     last_daily_review_day = -1
+    last_weekend_study_date = None
     last_signal_bar_time = None
     last_macro_entry_ts = 0.0
     last_logged_macro_source = None
     last_logged_regime = None
+    was_weekend_closed = False
 
     # Step 1: 同方向連続SL自滅防止ステート & 決済同期トラッカー
     last_loss_direction = None
@@ -86,6 +112,29 @@ def run_trading_daemon():
     while True:
         try:
             now = datetime.datetime.now()
+            now_utc = datetime.datetime.now(datetime.timezone.utc)
+            now_jst = now_utc.astimezone(JST)
+
+            # --- 0. 土日の全市場休場ガード ＆ 週末クオンツ自動検証研究室 ---
+            if is_weekend_market_closed(now_utc):
+                if not was_weekend_closed:
+                    print(f"🌙 [WEEKEND MARKET CLOSED] 全市場休場モードへ移行 ({now_jst.strftime('%Y-%m-%d %H:%M JST')})。土日のDiscord定時通知を停止します。")
+                    was_weekend_closed = True
+
+                # 土曜朝（JST 08:00以降）に週1回の相関・複合条件・リードラグ自動検証を実行
+                today_jst_str = now_jst.strftime("%Y-%m-%d")
+                if now_jst.weekday() == 5 and now_jst.hour >= 8 and last_weekend_study_date != today_jst_str:
+                    weekend_lab.run_weekend_study()
+                    review_engine.log_maintainer.run_maintenance()
+                    last_weekend_study_date = today_jst_str
+
+                time.sleep(60)
+                continue
+            else:
+                if was_weekend_closed:
+                    print(f"🌅 [MARKET REOPENED] 週明け市場オープン検知 ({now_jst.strftime('%Y-%m-%d %H:%M JST')})。通常スキャンを再開します。")
+                    was_weekend_closed = False
+
             # パラメータ動的リロード（相場急変時にファイルを編集すれば即反映）
             params = settings.load_strategy_params()
             exec_filters = params.get("execution_filters", {})
@@ -97,6 +146,13 @@ def run_trading_daemon():
             base_dyn_params = review_engine.optimizer.load_active_params()
             if "momentum_z_threshold" in base_dyn_params:
                 macro_cfg["momentum_z_threshold"] = base_dyn_params["momentum_z_threshold"]
+
+            # 週末研究室で算出された最新相関ウェイト（DXY vs 米金利）を動的反映
+            study_data = weekend_lab.load_latest_study()
+            rec_weights = study_data.get("recommended_weights", {})
+            if "dxy_weight" in rec_weights and "yield_weight" in rec_weights:
+                macro_cfg["dxy_weight"] = rec_weights["dxy_weight"]
+                macro_cfg["yield_weight"] = rec_weights["yield_weight"]
 
             macro_engine.update_config(macro_cfg)
             strategy.update_macro_config(macro_cfg)
@@ -203,7 +259,7 @@ def run_trading_daemon():
             # --- C. 戦略シグナルの評価（3系統ハイブリッド: 型A + 型B + 既存SMC） ---
             signal = strategy.evaluate(market_state)
 
-            # --- D. 毎時00分の定時レポート送信 ---
+            # --- D. 毎時00分の定時レポート送信（※平日の市場オープン中のみ送信、土日は上記ガードで完全停止） ---
             if now.minute == 0 and now.hour != last_hourly_report_hour:
                 print(f"[HOURLY REPORT TRIGGER] {now.strftime('%Y-%m-%d %H:%M:%S')}")
                 active_session = strategy.get_active_session() or "Interbank_OffHours"
@@ -217,14 +273,14 @@ def run_trading_daemon():
                 discord_mgr.send_hourly_status(market_state, signal, account_state, committee_report=committee_report)
                 last_hourly_report_hour = now.hour
 
-            # --- D-2. 毎朝06:00 JST（日次クローズ時）の自律振り返り ＆ 改善レポート送信 ---
-            if now.hour == 6 and now.day != last_daily_review_day:
-                print(f"[DAILY REVIEW TRIGGER] {now.strftime('%Y-%m-%d %H:%M:%S')} - 日次振り返りPDCAを実行中...")
+            # --- D-2. 毎朝06:00 JST（日次クローズ時）の自律振り返り ＆ 改善レポート送信（※日曜・月曜朝の休場明け空レビューは除外） ---
+            if now_jst.hour == 6 and now_jst.day != last_daily_review_day and now_jst.weekday() not in (6, 0):
+                print(f"[DAILY REVIEW TRIGGER] {now_jst.strftime('%Y-%m-%d %H:%M:%S JST')} - 日次振り返りPDCAを実行中...")
                 eval_data = review_engine.generate_daily_review(
                     market_summary=f"Ask: ${market_state['current_ask']:.2f}, ATR: {market_state['atr_m15_pips']} pips, Regime: {active_regime}"
                 )
                 discord_mgr.send_daily_review_report(eval_data)
-                last_daily_review_day = now.day
+                last_daily_review_day = now_jst.day
 
             # --- E. シグナル発生時の発注判定 ---
             if signal.action in ["BUY", "SELL"]:

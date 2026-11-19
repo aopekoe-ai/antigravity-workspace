@@ -21,6 +21,14 @@
 - `learning_journal.md` も256KB超過時に古いセクションをgzipアーカイブ化。
 - Dockerコンテナログに `max-size: 10m`, `max-file: 3` のローテーション上限を設定し、VPSのSSD圧迫を永久防止。
 
+### 4. 週末クオンツ自動検証研究室 ＆ 土日休場中のDiscord通知完全停止 (`core/weekend_research_engine.py`, `main.py`)
+- **土日の全市場休場ガード**: 金曜 22:00 UTC（土曜 07:00 JST）〜 日曜 22:00 UTC（月曜 07:00 JST）の間、毎時00分のDiscord定時レポート・AI合議体呼び出し・休場明け空レビュー通知を完全停止（ノイズ・無駄トークン消費ゼロ）。
+- **週末クオンツ自動検証研究室 (`WeekendResearchEngine`)**:
+  - 毎週土曜朝（08:00 JST）および初回起動時に、最新のMT5実データ（M5足2,400本・M1足3,000本）から `XAUUSD` vs `DXY`, `USDJPY`, `USOIL`, `USTEC`, `AUDUSD` を総当たり統計検証。
+  - ①最新15分リターン相関係数の算出と `DXY` / `米金利` の最適バイアス重み自動更新（`config/weekend_macro_study.json`）。
+  - ②複合シナリオ検証（「金利が下げてDXYが上がった時」「DXYが下げて金利が上がった時」「地政学リスクオフの原油高 vs インフレ型原油高」のゴールド勝率・平均変動幅）。
+  - ③リードラグ（先行指標急変から1分・2分・3分・5分・10分・15分後のどこでゴールドが最も順行するか）のM1実測プロファイル算出（`logs/weekend_research_journal.md` に永続記録）。
+
 ---
 
 ## [2026-11-19] Step 2: 3系統ハイブリッド＆デュアル先行指標エンジン (v9.0 Institutional Macro-Hybrid)

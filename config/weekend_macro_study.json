@@ -1,0 +1,96 @@
+{
+  "generated_at": "2026-11-19 05:15:34",
+  "m5_bars_analyzed": 2292,
+  "correlations_15m": {
+    "DXY": -0.386,
+    "USDJPY": -0.16,
+    "USOIL": -0.169,
+    "USTEC": 0.264,
+    "AUDUSD": 0.473
+  },
+  "recommended_weights": {
+    "dxy_weight": 0.7,
+    "yield_weight": 0.3
+  },
+  "conditional_scenarios": {
+    "both_down_gold_bull": {
+      "samples": 237,
+      "up_rate_pct": 46.4,
+      "down_rate_pct": 53.6,
+      "avg_pips_15m": -3.9,
+      "expected_hit_rate_pct": 46.4
+    },
+    "both_up_gold_bear": {
+      "samples": 270,
+      "up_rate_pct": 40.7,
+      "down_rate_pct": 59.3,
+      "avg_pips_15m": -15.1,
+      "expected_hit_rate_pct": 59.3
+    },
+    "yield_down_dxy_up_conflict": {
+      "samples": 17,
+      "up_rate_pct": 58.8,
+      "down_rate_pct": 41.2,
+      "avg_pips_15m": 15.7,
+      "expected_hit_rate_pct": 58.8
+    },
+    "dxy_down_yield_up_conflict": {
+      "samples": 20,
+      "up_rate_pct": 65.0,
+      "down_rate_pct": 35.0,
+      "avg_pips_15m": 34.8,
+      "expected_hit_rate_pct": 65.0
+    },
+    "oil_up_geopolitical_risk_off": {
+      "samples": 33,
+      "up_rate_pct": 51.5,
+      "down_rate_pct": 48.5,
+      "avg_pips_15m": 4.2,
+      "expected_hit_rate_pct": 51.5
+    },
+    "oil_up_inflation_yield_up": {
+      "samples": 174,
+      "up_rate_pct": 40.2,
+      "down_rate_pct": 59.8,
+      "avg_pips_15m": -12.1,
+      "expected_hit_rate_pct": 59.8
+    }
+  },
+  "lead_lag_profile": {
+    "m1_bars_analyzed": 2884,
+    "optimal_peak_lag_minutes": 15,
+    "peak_avg_favorable_pips": 11.1,
+    "horizon_breakdown": {
+      "t_plus_1m": {
+        "samples": 368,
+        "directional_hit_rate_pct": 44.8,
+        "avg_favorable_pips": 0.6
+      },
+      "t_plus_2m": {
+        "samples": 367,
+        "directional_hit_rate_pct": 46.3,
+        "avg_favorable_pips": 0.4
+      },
+      "t_plus_3m": {
+        "samples": 366,
+        "directional_hit_rate_pct": 48.4,
+        "avg_favorable_pips": 1.0
+      },
+      "t_plus_5m": {
+        "samples": 366,
+        "directional_hit_rate_pct": 54.6,
+        "avg_favorable_pips": 4.4
+      },
+      "t_plus_10m": {
+        "samples": 365,
+        "directional_hit_rate_pct": 56.7,
+        "avg_favorable_pips": 8.5
+      },
+      "t_plus_15m": {
+        "samples": 365,
+        "directional_hit_rate_pct": 53.7,
+        "avg_favorable_pips": 11.1
+      }
+    }
+  }
+}

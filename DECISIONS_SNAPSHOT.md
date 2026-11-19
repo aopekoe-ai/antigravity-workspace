@@ -107,3 +107,6 @@
 * **ログ＆ディスク永久保全 (`LogMaintainer` + Docker log limit)**:
   * `trade_journal.json`（上限300件＋OPEN）および `learning_journal.md`（上限256KB）の超過分を `logs/archive/*.gz` へ自動圧縮退避。
   * `docker-compose.yml` でコンテナログを `10MB × 3世代` に制限。
+* **週末自動検証研究室 ＆ 土日休場中Discord通知停止 (`WeekendResearchEngine`)**:
+  * 土曜 07:00 JST 〜 月曜 07:00 JST の全市場休場中はトレード関連のDiscord定時通知を完全停止。
+  * 毎週土曜 08:00 JST に直近M5/M1実データから相関・複合シナリオ（片方下落×他方上昇・原油高2類型）・リードラグ時間差を自動検証し、`config/weekend_macro_study.json` の最適重みを翌週の `DualMacroEngine` に自動反映。
