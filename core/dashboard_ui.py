@@ -199,11 +199,58 @@ def get_dashboard_html() -> str:
     background: #1e293b; border: 1px solid var(--gold); color: #fff;
     box-shadow: 0 8px 24px rgba(0,0,0,0.5); display: none;
   }
+
+  /* 誤操作防止ロック ＆ はい/いいえ確認モーダル */
+  .lock-banner {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    padding: 11px 14px; border-radius: 12px; margin-bottom: 12px;
+    background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.45);
+  }
+  .lock-banner.unlocked {
+    background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.5);
+  }
+  .locked-zone {
+    opacity: 0.55; pointer-events: none; user-select: none; filter: grayscale(0.25);
+    transition: opacity 0.2s ease;
+  }
+  .locked-zone.unlocked {
+    opacity: 1.0; pointer-events: auto; user-select: auto; filter: none;
+  }
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(5, 8, 15, 0.82); backdrop-filter: blur(6px);
+    display: none; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-box {
+    width: 100%; max-width: 420px; background: var(--card);
+    border: 1px solid var(--gold); border-radius: 14px; padding: 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.75);
+  }
+  .modal-title { font-size: 16px; font-weight: 800; color: var(--gold); margin-bottom: 8px; }
+  .modal-desc {
+    font-size: 13px; color: var(--text); background: var(--card-alt);
+    border: 1px solid var(--border); border-radius: 8px; padding: 11px;
+    margin-bottom: 16px; white-space: pre-line; line-height: 1.55;
+  }
+  .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 </style>
 </head>
 <body>
 
 <div id="toast"></div>
+
+<!-- はい / いいえ 確認ポップアップモーダル -->
+<div id="confirm-modal" class="modal-backdrop" onclick="if(event.target===this)closeConfirmModal()">
+  <div class="modal-box">
+    <div id="confirm-title" class="modal-title">⚠️ 設定変更の確認</div>
+    <div id="confirm-desc" class="modal-desc">この変更を適用してもよろしいですか？</div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeConfirmModal()">✖ いいえ (キャンセル)</button>
+      <button id="confirm-yes-btn" class="btn btn-gold">✔ はい (実行する)</button>
+    </div>
+  </div>
+</div>
 
 <header class="topbar">
   <div class="brand">⚡ XAU/USD Quant Cockpit <span style="font-size:11px;color:var(--muted);">v9.3</span></div>
@@ -295,7 +342,7 @@ def get_dashboard_html() -> str:
     <div class="card">
       <div class="card-title">
         <span>🎛️ 「もしも（What-If）」スライダー高速バックテスト（現行 vs 変更後シミュレーション）</span>
-        <button class="btn btn-sm btn-gold" onclick="applySimParamsToLive()">✨ この検証設定を本番ロジックへ即適用</button>
+        <button class="btn btn-sm btn-gold" onclick="confirmApplySimParamsToLive()">✨ この検証設定を本番ロジックへ適用 (確認へ)</button>
       </div>
       <div class="grid-2">
         <div>
@@ -344,7 +391,7 @@ def get_dashboard_html() -> str:
     <div class="card">
       <div class="card-title">
         <span>🔬 週末クオンツ研究室（2026年最新相関・複合シナリオ・M1リードラグ時間差）</span>
-        <button class="btn btn-sm btn-primary" onclick="triggerLabTask('weekend_study')">🔄 今すぐ再検証＆Discord送信</button>
+        <button class="btn btn-sm btn-primary" onclick="confirmTriggerLabTask('weekend_study')">🔄 今すぐ再検証＆Discord送信</button>
       </div>
       <div id="weekend-study-box" style="font-size:12px;"></div>
     </div>
@@ -376,13 +423,23 @@ def get_dashboard_html() -> str:
 
   <!-- ==================== TAB 5: CONTROL & BROKER ==================== -->
   <section id="tab-control" class="tab-pane">
+    <!-- スマホ誤タップ防止ロックバー -->
+    <div id="edit-lock-banner" class="lock-banner">
+      <div>
+        <div id="edit-lock-title" style="font-weight:800;font-size:13px;color:var(--gold);">🔒 誤操作防止ロック中（スクロール時に手が当たっても変更されません）</div>
+        <div style="font-size:11px;color:var(--muted);">設定を変更する時だけ右のボタンでロックを解除してください（変更完了後は自動で再ロックされます）</div>
+      </div>
+      <button id="edit-lock-btn" class="btn btn-sm btn-gold" onclick="toggleEditLock()">🔓 ロックを解除して編集</button>
+    </div>
+
+    <div id="control-locked-zone" class="locked-zone">
     <div class="card">
-      <div class="card-title">⚡ 運用スタンス（ワンタップでロジック改修方針を一括切替）</div>
+      <div class="card-title">⚡ 運用スタンス（タップ後に「はい／いいえ」確認ポップアップが表示されます）</div>
       <div class="stance-grid">
-        <button class="stance-btn" id="st-AGGRESSIVE" onclick="setStance('AGGRESSIVE')">🔥 積極トレンド追撃<br><span style="font-size:10px;color:var(--muted);">Z閾値1.35 / 最大3ポジ</span></button>
-        <button class="stance-btn" id="st-BALANCED" onclick="setStance('BALANCED')">⚖️ 標準バランス<br><span style="font-size:10px;color:var(--muted);">Z閾値1.50 / 最大3ポジ</span></button>
-        <button class="stance-btn" id="st-DEFENSIVE" onclick="setStance('DEFENSIVE')">🛡️ 厳選・資金防衛<br><span style="font-size:10px;color:var(--muted);">Z閾値1.70 / 最大1ポジ</span></button>
-        <button class="stance-btn" id="st-PAUSED" onclick="setStance('PAUSED')">⏸️ 新規エントリー停止<br><span style="font-size:10px;color:var(--muted);">保有中ポジのみ保護</span></button>
+        <button class="stance-btn" id="st-AGGRESSIVE" onclick="confirmSetStance('AGGRESSIVE')">🔥 積極トレンド追撃<br><span style="font-size:10px;color:var(--muted);">Z閾値1.35 / 最大3ポジ</span></button>
+        <button class="stance-btn" id="st-BALANCED" onclick="confirmSetStance('BALANCED')">⚖️ 標準バランス<br><span style="font-size:10px;color:var(--muted);">Z閾値1.50 / 最大3ポジ</span></button>
+        <button class="stance-btn" id="st-DEFENSIVE" onclick="confirmSetStance('DEFENSIVE')">🛡️ 厳選・資金防衛<br><span style="font-size:10px;color:var(--muted);">Z閾値1.70 / 最大1ポジ</span></button>
+        <button class="stance-btn" id="st-PAUSED" onclick="confirmSetStance('PAUSED')">⏸️ 新規エントリー停止<br><span style="font-size:10px;color:var(--muted);">保有中ポジのみ保護</span></button>
       </div>
     </div>
 
@@ -439,8 +496,8 @@ def get_dashboard_html() -> str:
             <select id="cfg-daily-hour" class="form-select"><option value="6">毎朝 06:00 JST (NYクローズ直後)</option><option value="7">毎朝 07:00 JST</option><option value="8">毎朝 08:00 JST</option></select>
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;">
-            <button class="btn btn-gold btn-block" onclick="saveControlConfig()">💾 設定・改修方針を保存 (即反映)</button>
-            <button class="btn btn-primary" style="white-space:nowrap;" onclick="triggerLabTask('daily_report')">📨 日次レポート送信</button>
+            <button class="btn btn-gold btn-block" onclick="confirmSaveControlConfig()">💾 設定・改修方針を保存 (確認へ)</button>
+            <button class="btn btn-primary" style="white-space:nowrap;" onclick="confirmTriggerLabTask('daily_report')">📨 日次レポート送信</button>
           </div>
         </div>
 
@@ -468,9 +525,10 @@ def get_dashboard_html() -> str:
             </div>
           </div>
           <div id="brk-detected-info" style="font-size:11px;color:var(--muted);margin-bottom:8px;"></div>
-          <button class="btn btn-primary btn-block" onclick="switchBrokerAccount()">🔄 MT5口座を即時切替 ＆ シンボル自動検出</button>
+          <button class="btn btn-primary btn-block" onclick="confirmSwitchBrokerAccount()">🔄 MT5口座を即時切替 ＆ シンボル自動検出</button>
         </div>
       </div>
+    </div>
     </div>
   </section>
 </main>
@@ -589,6 +647,7 @@ function bipolarBarHtml(val, maxAbs) {
 async function refreshAll() {
   try {
     const st = await apiCall('/api/state');
+    window._lastFetchedState = st;
     renderCockpit(st);
     renderLogicSpec(st);
     renderShadowAndStudy(st);
@@ -1066,6 +1125,67 @@ async function runBacktest() {
   } catch (e) { console.error(e); }
 }
 
+let isEditUnlocked = false;
+let pendingConfirmFn = null;
+
+function toggleEditLock(forceState=null) {
+  isEditUnlocked = (forceState !== null) ? forceState : !isEditUnlocked;
+  const zone = document.getElementById('control-locked-zone');
+  const banner = document.getElementById('edit-lock-banner');
+  const title = document.getElementById('edit-lock-title');
+  const btn = document.getElementById('edit-lock-btn');
+  if (isEditUnlocked) {
+    zone.classList.add('unlocked');
+    banner.classList.add('unlocked');
+    title.textContent = '🔓 編集モード解除中（変更後に保存ボタンを押すと確認ポップアップが出ます）';
+    title.style.color = 'var(--bull)';
+    btn.textContent = '🔒 編集ロックに戻す';
+    btn.className = 'btn btn-sm';
+  } else {
+    zone.classList.remove('unlocked');
+    banner.classList.remove('unlocked');
+    title.textContent = '🔒 誤操作防止ロック中（スクロール時に手が当たっても変更されません）';
+    title.style.color = 'var(--gold)';
+    btn.textContent = '🔓 ロックを解除して編集';
+    btn.className = 'btn btn-sm btn-gold';
+    controlsInitialized = false;
+    if (window._lastFetchedState) populateControls(window._lastFetchedState);
+  }
+}
+
+function openConfirmModal(titleTxt, descTxt, onYesFn) {
+  document.getElementById('confirm-title').textContent = titleTxt;
+  document.getElementById('confirm-desc').textContent = descTxt;
+  pendingConfirmFn = onYesFn;
+  document.getElementById('confirm-yes-btn').onclick = async () => {
+    const fn = pendingConfirmFn;
+    closeConfirmModal();
+    if (fn) {
+      await fn();
+      toggleEditLock(false);
+    }
+  };
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  pendingConfirmFn = null;
+}
+
+function confirmApplySimParamsToLive() {
+  const z = Number(document.getElementById('sim-z').value).toFixed(2);
+  const mrr = Number(document.getElementById('sim-mrr').value).toFixed(2);
+  const srr = Number(document.getElementById('sim-srr').value).toFixed(2);
+  const atr = Number(document.getElementById('sim-atr').value).toFixed(2);
+  const pos = document.getElementById('sim-pos').value;
+  openConfirmModal(
+    '✨ シミュレーション設定の本番適用確認',
+    `以下の検証パラメータを本番BOTへ適用しますか？\n\n・型A Zスコア閾値: ${z}σ\n・型A 最小RR比: 1 : ${mrr}\n・系統3 SMC 最小RR比: 1 : ${srr}\n・ATR SL倍率: ${atr}倍\n・最大同時保有ポジ数: ${pos}ポジ`,
+    applySimParamsToLive
+  );
+}
+
 async function applySimParamsToLive() {
   const payload = {
     momentum_z_threshold: Number(document.getElementById('sim-z').value),
@@ -1079,11 +1199,40 @@ async function applySimParamsToLive() {
   refreshAll();
 }
 
+function confirmSetStance(stance) {
+  const names = {
+    'AGGRESSIVE': '🔥 積極トレンド追撃モード (Z閾値1.35 / 最大3ポジ)',
+    'BALANCED': '⚖️ 標準バランスモード (Z閾値1.50 / 最大3ポジ)',
+    'DEFENSIVE': '🛡️ 厳選・資金防衛モード (Z閾値1.70 / 最大1ポジ)',
+    'PAUSED': '⏸️ 新規エントリー一時停止モード (保有ポジのみ保護)'
+  };
+  openConfirmModal(
+    '⚡ 運用スタンス変更の確認',
+    `BOTの運用スタンスを以下に変更してよろしいですか？\n\n👉 【 ${names[stance] || stance} 】`,
+    () => setStance(stance)
+  );
+}
+
 async function setStance(stance) {
   const r = await apiCall('/api/control/stance', 'POST', {stance});
   controlsInitialized = false;
   showToast(r.message || `スタンスを ${stance} に切り替えました`);
   refreshAll();
+}
+
+function confirmSaveControlConfig() {
+  const enA = document.getElementById('cfg-en-a').checked ? 'ON' : 'OFF';
+  const enB = document.getElementById('cfg-en-b').checked ? 'ON' : 'OFF';
+  const enS = document.getElementById('cfg-en-smc').checked ? 'ON' : 'OFF';
+  const maxP = document.getElementById('cfg-max-pos').value;
+  const risk = document.getElementById('cfg-risk-pct').value;
+  const dd = document.getElementById('cfg-dd-pct').value;
+  const dir = document.getElementById('cfg-owner-dir').value.trim();
+  openConfirmModal(
+    '💾 設定・改修方針の保存確認',
+    `以下の設定を保存し、本番BOTへ反映してよろしいですか？\n\n・稼働ロジック: 型A[${enA}] / 型B[${enB}] / SMC[${enS}]\n・最大同時ポジ数: ${maxP}ポジ (1回リスク ${risk}% / 日次DD停止 ${dd}%)\n・AI方針メモ: ${dir ? dir : '(指定なし)'}`,
+    saveControlConfig
+  );
 }
 
 async function saveControlConfig() {
@@ -1110,7 +1259,7 @@ async function saveControlConfig() {
   refreshAll();
 }
 
-async function switchBrokerAccount() {
+function confirmSwitchBrokerAccount() {
   const login = Number(document.getElementById('brk-login').value);
   const server = document.getElementById('brk-server').value.trim();
   const password = document.getElementById('brk-pass').value;
@@ -1119,6 +1268,18 @@ async function switchBrokerAccount() {
     showToast('MT5口座を切り替えるにはログイン番号・サーバー名・パスワードを入力してください', true);
     return;
   }
+  openConfirmModal(
+    '🏦 MT5アカウント（証券会社）切替の確認',
+    `接続先MT5アカウントを以下へ切り替えてよろしいですか？\n\n・ログイン番号: #${login}\n・サーバー名: ${server}\n・指定ゴールド銘柄: ${symbol || '(自動検出)'}`,
+    switchBrokerAccount
+  );
+}
+
+async function switchBrokerAccount() {
+  const login = Number(document.getElementById('brk-login').value);
+  const server = document.getElementById('brk-server').value.trim();
+  const password = document.getElementById('brk-pass').value;
+  const symbol = document.getElementById('brk-symbol').value.trim();
   showToast('MT5口座へ接続テスト＆シンボル自動検出中...');
   const r = await apiCall('/api/control/broker', 'POST', {login, server, password, symbol});
   if (r.success) {
@@ -1131,6 +1292,13 @@ async function switchBrokerAccount() {
   } else {
     showToast(r.error || '口座切替に失敗しました', true);
   }
+}
+
+function confirmTriggerLabTask(task) {
+  const desc = task === 'daily_report'
+    ? '今すぐ6ブロック日次運用ブリーフィングを生成してDiscordへ送信しますか？\n（※Gemini APIを1回呼び出します）'
+    : '今すぐ最新M5/M1データで週末相関・リードラグ検証を再計算し、結果をDiscordへ送信しますか？\n（※AIトークン消費はゼロです）';
+  openConfirmModal('📨 手動実行の確認', desc, () => triggerLabTask(task));
 }
 
 async function triggerLabTask(task) {
