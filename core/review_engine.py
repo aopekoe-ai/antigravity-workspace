@@ -472,8 +472,12 @@ class ReviewEngine:
 
         # AI 6ブロック深掘り分析（thinking_budget=0 でトークンを節約しつつ密度を最大化）
         if self.available:
+            strat_p = settings.load_strategy_params()
+            owner_dir = str((strat_p.get("dashboard_controls") or {}).get("owner_directive_ja", "")).strip()
+            owner_line = f"Owner Policy Directive (MUST RESPECT): {owner_dir}\n" if owner_dir else ""
             prompt = (
                 f"Date:{today_jst_str} XAUUSD HedgeFund Daily Briefing\n"
+                f"{owner_line}"
                 f"24h Range: ${low_24h:.2f}-${high_24h:.2f} ({range_pips_24h}pips), Now:${current_px:.2f}, H1:{h1_trend}, M15:{m15_trend}, Regime:{active_regime}\n"
                 f"Macro: src={macro_state.get('source')}, DXY_Z={macro_state.get('dxy_z',0)}, Yield_Z={macro_state.get('yield_z',0)}, Bias={macro_state.get('macro_bias_score',0)}\n"
                 f"PnL: {m_today['total_profit']:+,.0f}JPY ({daily_ret_pct:+.2f}%), Trades:{m_today['total_count']} ({m_today['true_wins']}W/{m_today['true_losses']}L/{be_cnt}BE), PF:{m_today['profit_factor']}\n"

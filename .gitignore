@@ -27,3 +27,6 @@ patch_*.py
 setup_push.sh
 check_symbols.py
 logs/tv_signals.json
+config/broker_account.json
+logs/quant_fund.db*
+logs/daily_defense_stats.json

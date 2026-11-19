@@ -42,9 +42,10 @@ class DiscordManager:
         ]
         if macro_note:
             fields.append({"name": "🤖 Gemini 2.5 Flash マクロ安全判定", "value": f"> {macro_note}", "inline": False})
+        dash_url = settings.get_dashboard_url() if hasattr(settings, "get_dashboard_url") else "http://155.133.7.59/dashboard"
         fields.append({
             "name": "🛡️ ポジション＆安全担保",
-            "value": f"✅ {pyramid_note}\n✅ ブローカー側ハードSL即時付与 ＆ 個別建値移動・マクロ反転トレーリング監視中",
+            "value": f"✅ {pyramid_note}\n✅ ブローカー側ハードSL即時付与 ＆ 個別建値移動・マクロ反転トレーリング監視中\n📱 [スマホ管理ダッシュボードを開く]({dash_url})",
             "inline": False
         })
 
@@ -239,10 +240,12 @@ class DiscordManager:
         pdh = eval_data.get("pdh")
         pdl = eval_data.get("pdl")
         lvl_txt = f"前日高値(PDH): `${pdh:.2f}` ／ 前日安値(PDL): `${pdl:.2f}`" if (pdh and pdl) else "主要フラクタル高安を監視"
+        dash_url = settings.get_dashboard_url() if hasattr(settings, "get_dashboard_url") else "http://155.133.7.59/dashboard"
         b6_text = (
             f"• **注目流動性ターゲット**: {lvl_txt}\n"
             f"• **📈 本日の立ち回り・ボラ余力**: {eval_data.get('session_outlook_ja', '上位足順張り継続')}\n"
-            f"• **🎬 AIプロデューサー提案**: {eval_data.get('producer_proposal_ja') or eval_data.get('lessons_learned', '')}"
+            f"• **🎬 AIプロデューサー提案**: {eval_data.get('producer_proposal_ja') or eval_data.get('lessons_learned', '')}\n"
+            f"• **📱 ワンタップ管理画面**: [**👉 スマホでクオンツ管理ダッシュボードを開く（検証・方針変更・口座切替）**]({dash_url})"
         )
 
         embed = {
@@ -321,9 +324,11 @@ class DiscordManager:
             st = hb.get(f"t_plus_{m}m", {})
             if st:
                 lag_parts.append(f"`+{m}分`: 勝率 `{st.get('directional_hit_rate_pct',0)}%` (`{st.get('avg_favorable_pips',0):+.1f}pips`)")
+        dash_url = settings.get_dashboard_url() if hasattr(settings, "get_dashboard_url") else "http://155.133.7.59/dashboard"
         f4_text = (
             f"• **ショック後の経過時間別エッジ (M1足 {ll.get('m1_bars_analyzed',0)}本)**:\n  " + " → ".join(lag_parts) + "\n"
-            f"• **🎯 最適保有ピーク**: 先行指標急変から **`{ll.get('optimal_peak_lag_minutes', 15)}分後`** (平均 **`{ll.get('peak_avg_favorable_pips', 0):+.1f} pips`**)"
+            f"• **🎯 最適保有ピーク**: 先行指標急変から **`{ll.get('optimal_peak_lag_minutes', 15)}分後`** (平均 **`{ll.get('peak_avg_favorable_pips', 0):+.1f} pips`**)\n"
+            f"• **📱 ワンタップ管理画面**: [**👉 スマホでクオンツ管理ダッシュボードを開く（What-If検証・設定変更）**]({dash_url})"
         )
 
         embed = {

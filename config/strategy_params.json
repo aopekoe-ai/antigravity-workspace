@@ -6,7 +6,7 @@
     "risk_per_trade_percent": 1.5,
     "max_daily_drawdown_percent": 3.0,
     "min_lot_size": 0.01,
-    "max_lot_size": 0.50,
+    "max_lot_size": 0.5,
     "max_concurrent_positions": 3,
     "enforce_single_position": false
   },
@@ -20,10 +20,26 @@
   "execution_filters": {
     "max_allowed_spread_pips": 3.0,
     "allowed_sessions_jst": [
-      {"name": "Asia", "start_hour": 8, "end_hour": 15},
-      {"name": "London_Pre", "start_hour": 15, "end_hour": 16},
-      {"name": "London", "start_hour": 16, "end_hour": 24},
-      {"name": "NewYork", "start_hour": 21, "end_hour": 6}
+      {
+        "name": "Asia",
+        "start_hour": 8,
+        "end_hour": 15
+      },
+      {
+        "name": "London_Pre",
+        "start_hour": 15,
+        "end_hour": 16
+      },
+      {
+        "name": "London",
+        "start_hour": 16,
+        "end_hour": 24
+      },
+      {
+        "name": "NewYork",
+        "start_hour": 21,
+        "end_hour": 6
+      }
     ],
     "avoid_first_n_minutes_of_session": 2
   },
@@ -44,7 +60,7 @@
     "momentum_cooldown_max_sec": 240,
     "max_chase_atr_mult": 1.5,
     "smt_lookback_m1": 35,
-    "hard_guard_threshold": 0.70,
+    "hard_guard_threshold": 0.7,
     "soft_guard_threshold": 0.35,
     "boost_lot_multiplier": 1.25,
     "soft_guard_lot_multiplier": 0.75,
@@ -58,5 +74,20 @@
       "equity": "USTEC",
       "aud": "AUDUSD"
     }
+  },
+  "dashboard_controls": {
+    "stance": "BALANCED",
+    "trading_paused": false,
+    "enable_type_a": true,
+    "enable_type_b": true,
+    "enable_smc": true,
+    "session_asia": true,
+    "session_london": true,
+    "session_ny": true,
+    "sl_cooldown_minutes": 15,
+    "owner_directive_ja": "",
+    "notify_hourly": true,
+    "notify_weekend": true,
+    "daily_report_hour_jst": 6
   }
 }

@@ -3,16 +3,17 @@ import json
 import os
 import threading
 import time
+import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
+
+from core.dashboard_ui import get_dashboard_html
 
 
 class MacroWebhookStore:
     """
     TradingView Webhook 受信シグナルをスレッドセーフ＆永続キャッシュ管理するストア。
-    - オンメモリ高速読み出し（レイテンシ < 1ms）
-    - ログディレクトリへのアトミック保存（コンテナ再起動時も最新シグナルを復元）
     """
 
     def __init__(self, cache_path: Path):
@@ -78,7 +79,6 @@ class MacroWebhookStore:
             self._state["last_any_ts"] = now_ts
             self._state["received_count"] = int(self._state.get("received_count", 0)) + 1
 
-            # ハートビート情報はいずれのシグナル受信時にも最新マクロ環境として更新
             self._state["heartbeat"] = {
                 "dxy_z": entry["dxy_z"],
                 "us10y_z": entry["us10y_z"],
@@ -91,7 +91,6 @@ class MacroWebhookStore:
 
             if sig_type == "MACRO_MOMENTUM" and direction in ("BUY", "SELL"):
                 prev = self._state.get("momentum")
-                # 同一方向の連続急変時は初検知時刻を引き継ぎ、クールダウン判定を正確化
                 if prev and prev.get("direction") == direction and (now_ts - float(prev.get("received_at", 0.0))) < 240:
                     entry["first_seen_at"] = float(prev.get("first_seen_at", now_ts))
                 else:
@@ -109,7 +108,6 @@ class MacroWebhookStore:
             return json.loads(json.dumps(self._state))
 
     def mark_consumed(self, kind: str) -> None:
-        """約定完了したTVトリガーを消費済みにして多重発注を防止"""
         with self._lock:
             if kind in ("momentum", "smt") and isinstance(self._state.get(kind), dict):
                 self._state[kind]["consumed"] = True
@@ -118,15 +116,25 @@ class MacroWebhookStore:
 
 class TVWebhookServer:
     """
-    Python標準ライブラリのみで稼働する超軽量・高信頼 TradingView Webhook サーバー。
-    - 外部依存ゼロ（追加pip不要）
-    - 応答速度 < 5ms（TradingViewの3秒タイムアウト制約を余裕でクリア）
-    - text/plain および application/json 両対応（TradingView仕様対策）
+    TradingView Webhook 受信 ＆ クオンツ運用Webダッシュボード統合サーバー (Port 80 -> 8000)
+    - /tv-webhook : TradingView アラート受信 (token認証)
+    - /dashboard  : スマホ＆PC対応 4タブ管理画面
+    - /api/*      : リアルタイム状態取得・What-Ifバックテスト・方針変更・MT5口座切替API
     """
 
-    def __init__(self, store: MacroWebhookStore, secret_token: str, host: str = "0.0.0.0", port: int = 8000):
+    def __init__(
+        self,
+        store: MacroWebhookStore,
+        secret_token: str,
+        dashboard_key: Optional[str] = None,
+        api_dispatcher: Optional[Callable[[str, str, Dict[str, Any]], Dict[str, Any]]] = None,
+        host: str = "0.0.0.0",
+        port: int = 8000,
+    ):
         self.store = store
         self.secret_token = secret_token
+        self.dashboard_key = dashboard_key or secret_token
+        self.api_dispatcher = api_dispatcher
         self.host = host
         self.port = port
         self._server: Optional[ThreadingHTTPServer] = None
@@ -135,9 +143,10 @@ class TVWebhookServer:
     def _build_handler(self):
         store = self.store
         secret_token = self.secret_token
+        dashboard_key = self.dashboard_key
+        server_ref = self
 
         class Handler(BaseHTTPRequestHandler):
-            # 標準ログ出力の過剰スパムを抑制し、重要イベントのみ出力
             def log_message(self, format: str, *args: Any) -> None:
                 return
 
@@ -149,37 +158,76 @@ class TVWebhookServer:
                 self.end_headers()
                 self.wfile.write(raw)
 
+            def _send_html(self, status_code: int, html: str) -> None:
+                raw = html.encode("utf-8")
+                self.send_response(status_code)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
+
+            def _check_dashboard_auth(self, query_str: str, payload: Optional[Dict[str, Any]] = None) -> bool:
+                qs = urllib.parse.parse_qs(query_str)
+                q_key = (qs.get("key") or [""])[0]
+                h_key = self.headers.get("X-Dashboard-Key") or ""
+                p_key = str((payload or {}).get("key") or "")
+                provided = (q_key or h_key or p_key).strip()
+                if not dashboard_key:
+                    return True
+                return hmac.compare_digest(provided, dashboard_key) or hmac.compare_digest(provided, secret_token)
+
             def do_GET(self) -> None:
-                path = self.path.split("?", 1)[0]
+                parts = self.path.split("?", 1)
+                path = parts[0]
+                q_str = parts[1] if len(parts) > 1 else ""
+
                 if path in ("/health", "/"):
                     snap = store.get_snapshot()
                     last_ts = float(snap.get("last_any_ts", 0.0))
                     age_sec = round(time.time() - last_ts, 1) if last_ts > 0 else None
                     self._send_json(200, {
                         "status": "ok",
-                        "service": "xauusd-macro-webhook",
+                        "service": "xauusd-macro-webhook-and-dashboard",
                         "received_count": snap.get("received_count", 0),
                         "last_signal_age_sec": age_sec,
                     })
-                else:
-                    self._send_json(404, {"error": "not_found"})
+                    return
+
+                if path == "/dashboard":
+                    self._send_html(200, get_dashboard_html())
+                    return
+
+                if path.startswith("/api/"):
+                    if not self._check_dashboard_auth(q_str):
+                        self._send_json(401, {"error": "unauthorized"})
+                        return
+                    if server_ref.api_dispatcher:
+                        try:
+                            res = server_ref.api_dispatcher("GET", path, {})
+                            self._send_json(200, res)
+                        except Exception as e:
+                            self._send_json(500, {"error": str(e)})
+                    else:
+                        self._send_json(503, {"error": "dispatcher_not_ready"})
+                    return
+
+                self._send_json(404, {"error": "not_found"})
 
             def do_POST(self) -> None:
-                path = self.path.split("?", 1)[0]
-                if path not in ("/tv-webhook", "/webhook"):
-                    self._send_json(404, {"error": "not_found"})
-                    return
+                parts = self.path.split("?", 1)
+                path = parts[0]
+                q_str = parts[1] if len(parts) > 1 else ""
 
                 try:
                     content_len = int(self.headers.get("Content-Length", "0"))
                 except ValueError:
                     content_len = 0
 
-                if content_len <= 0 or content_len > 16384:
+                if content_len < 0 or content_len > 32768:
                     self._send_json(400, {"error": "invalid_payload_size"})
                     return
 
-                raw_bytes = self.rfile.read(content_len)
+                raw_bytes = self.rfile.read(content_len) if content_len > 0 else b"{}"
                 try:
                     payload = json.loads(raw_bytes.decode("utf-8"))
                     if not isinstance(payload, dict):
@@ -188,26 +236,45 @@ class TVWebhookServer:
                     self._send_json(400, {"error": "invalid_json"})
                     return
 
-                # 認証トークン検証（ボディ内 token または X-Webhook-Token ヘッダー）
-                provided_token = str(
-                    payload.get("token") or self.headers.get("X-Webhook-Token") or ""
-                ).strip()
+                # 1. TradingView Webhook
+                if path in ("/tv-webhook", "/webhook"):
+                    provided_token = str(
+                        payload.get("token") or self.headers.get("X-Webhook-Token") or ""
+                    ).strip()
 
-                if not secret_token or not hmac.compare_digest(provided_token, secret_token):
-                    print(f"[TV WEBHOOK REJECTED] 不正トークンからのアクセス (IP: {self.client_address[0]})")
-                    self._send_json(401, {"error": "unauthorized"})
+                    if not secret_token or not hmac.compare_digest(provided_token, secret_token):
+                        print(f"[TV WEBHOOK REJECTED] 不正トークンからのアクセス (IP: {self.client_address[0]})")
+                        self._send_json(401, {"error": "unauthorized"})
+                        return
+
+                    entry = store.record_signal(payload)
+                    print(
+                        f"📡 [TV WEBHOOK RECEIVED] type={entry['signal_type']} dir={entry['direction']} "
+                        f"dxy_z={entry['dxy_z']:+.2f} us10y_z={entry['us10y_z']:+.2f} bias={entry['bias_score']:+.2f}"
+                    )
+                    self._send_json(200, {
+                        "status": "accepted",
+                        "signal_type": entry["signal_type"],
+                        "direction": entry["direction"],
+                    })
                     return
 
-                entry = store.record_signal(payload)
-                print(
-                    f"📡 [TV WEBHOOK RECEIVED] type={entry['signal_type']} dir={entry['direction']} "
-                    f"dxy_z={entry['dxy_z']:+.2f} us10y_z={entry['us10y_z']:+.2f} bias={entry['bias_score']:+.2f}"
-                )
-                self._send_json(200, {
-                    "status": "accepted",
-                    "signal_type": entry["signal_type"],
-                    "direction": entry["direction"],
-                })
+                # 2. Dashboard Control & Lab API
+                if path.startswith("/api/"):
+                    if not self._check_dashboard_auth(q_str, payload):
+                        self._send_json(401, {"error": "unauthorized"})
+                        return
+                    if server_ref.api_dispatcher:
+                        try:
+                            res = server_ref.api_dispatcher("POST", path, payload)
+                            self._send_json(200, res)
+                        except Exception as e:
+                            self._send_json(500, {"error": str(e)})
+                    else:
+                        self._send_json(503, {"error": "dispatcher_not_ready"})
+                    return
+
+                self._send_json(404, {"error": "not_found"})
 
         return Handler
 
@@ -221,7 +288,7 @@ class TVWebhookServer:
                 daemon=True,
             )
             self._thread.start()
-            print(f"📡 [TV WEBHOOK READY] 受信サーバー起動完了 (listen={self.host}:{self.port}, path=/tv-webhook)")
+            print(f"📡 [TV WEBHOOK & DASHBOARD READY] 起動完了 (listen={self.host}:{self.port}, paths=/tv-webhook, /dashboard)")
             return True
         except Exception as e:
             print(f"[TV WEBHOOK ERROR] サーバー起動失敗: {e}")

@@ -146,6 +146,7 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
         # 1. ハードガード（2市場が強烈に逆行している自滅局面のみブロック）
         if aligned_score <= -hard_th:
             self.last_hard_guard_blocked = True
+            self.last_blocked_candidate = signal
             print(
                 f"[MACRO HARD GUARD] {signal.setup_name} ({signal.action}) を見送り "
                 f"(source={source}, aligned_score={aligned_score:+.2f} <= -{hard_th:.2f})"
@@ -235,13 +236,33 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
             )
 
         macro_enabled = bool(self.macro_cfg.get("enabled", True))
+        dash_ctrl = market_data.get("dashboard_controls") or {}
+        if dash_ctrl.get("trading_paused", False):
+            return TradeSignal(
+                action="NO_TRADE",
+                confidence=0.0,
+                suggested_entry_price=current_ask,
+                suggested_sl_price=0.0,
+                suggested_tp_price=0.0,
+                sl_distance_pips=0.0,
+                tp_distance_pips=0.0,
+                risk_reward_ratio=0.0,
+                setup_name="Dashboard_Paused",
+                rationale_ja="ダッシュボード設定により新規エントリー一時停止中（保有中ポジションの保護のみ稼働）。"
+            )
+
+        en_type_a = dash_ctrl.get("enable_type_a", True)
+        en_type_b = dash_ctrl.get("enable_type_b", True)
+        en_smc = dash_ctrl.get("enable_smc", True)
+
         active_open_engines = set(market_data.get("active_open_engines") or [])
         self.last_hard_guard_blocked = False
+        self.last_blocked_candidate = None
 
         # =====================================================================
         # 系統 1 (新規・型A): コンフルエンス・マクロモメンタム (FVG不要・上位足順張り)
         # =====================================================================
-        if macro_enabled and ("MACRO_MOMENTUM" not in active_open_engines) and macro_state.get("momentum_signal") in ("BUY", "SELL"):
+        if macro_enabled and en_type_a and ("MACRO_MOMENTUM" not in active_open_engines) and macro_state.get("momentum_signal") in ("BUY", "SELL"):
             m_dir = macro_state["momentum_signal"]
             m_src = macro_state.get("momentum_source", "MT5_M1")
             m_detail = macro_state.get("momentum_detail", "")
@@ -298,7 +319,7 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
         # =====================================================================
         # 系統 2 (新規・型B): SMTダイバージェンス (機関の吸収・FVG不要・上位足順張り)
         # =====================================================================
-        if macro_enabled and ("SMT_DIVERGENCE" not in active_open_engines) and macro_state.get("smt_signal") in ("BUY", "SELL"):
+        if macro_enabled and en_type_b and ("SMT_DIVERGENCE" not in active_open_engines) and macro_state.get("smt_signal") in ("BUY", "SELL"):
             s_dir = macro_state["smt_signal"]
             s_src = macro_state.get("smt_source", "MT5_M1")
             s_detail = macro_state.get("smt_detail", "")
@@ -364,7 +385,7 @@ class SMCLiquiditySweepStrategy(BaseStrategy):
         valid_highs = [h for h in all_high_pools if h > current_bid - (atr_dollars * 1.5)]
         valid_lows  = [l for l in all_low_pools  if l < current_ask + (atr_dollars * 1.5)]
 
-        smc_can_open = ("SMC" not in active_open_engines)
+        smc_can_open = en_smc and ("SMC" not in active_open_engines)
 
         # SELL: 高値流動性スイープ
         if smc_can_open and allow_sell:
