@@ -111,7 +111,7 @@ def run_trading_daemon():
 
             today_m = review_engine._compute_metrics_block(review_engine.get_today_trades())
             week_m = review_engine._compute_metrics_block(review_engine._filter_trades_since_hours(24 * 7))
-            recent_trades = list(reversed(review_engine._load_journal()[-30:]))
+            recent_trades = list(reversed(review_engine._load_journal()[-100:]))
 
             # ライブ適用中の仕様値（M5 ATR連動の実効値＋レジーム適応後の実効値）を算出
             atr_d = float(mkt_snap.get("atr_m5_dollars") or 2.0)

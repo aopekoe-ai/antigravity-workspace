@@ -234,6 +234,16 @@ def get_dashboard_html() -> str:
     margin-bottom: 16px; white-space: pre-line; line-height: 1.55;
   }
   .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* 編集モード時のスマホ画面追従フローティング保存バー */
+  .sticky-save-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
+    background: rgba(11, 15, 23, 0.95); backdrop-filter: blur(10px);
+    border-top: 2px solid var(--gold); padding: 12px 16px;
+    display: none; align-items: center; justify-content: space-between;
+    box-shadow: 0 -8px 25px rgba(0,0,0,0.6);
+  }
+  .sticky-save-bar.show { display: flex; }
 </style>
 </head>
 <body>
@@ -411,12 +421,20 @@ def get_dashboard_html() -> str:
     </div>
 
     <div class="card">
-      <div class="card-title">📜 直近トレード履歴（どのロジックがいくらでエントリー・決済したか）</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <div class="card-title" style="margin:0;">📜 トレード履歴（ロジック別 約定・決済）</div>
+        <div id="trades-filter-info" style="font-size:12px;color:var(--muted);"></div>
+      </div>
       <div style="overflow-x:auto;">
         <table>
           <thead><tr><th>日時</th><th>ロジック</th><th>売買/Lot</th><th>セットアップ名</th><th>約定価格 → 決済価格</th><th>SL / TP</th><th>状態/結果</th></tr></thead>
           <tbody id="trades-tbody"></tbody>
         </table>
+      </div>
+      <div style="text-align:center;margin-top:14px;">
+        <button id="btn-load-more-trades" onclick="toggleTradeHistoryView()" class="btn" style="padding:8px 22px;font-size:12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;display:none;">
+          ▼ さらに過去の履歴を読み込む
+        </button>
       </div>
     </div>
   </section>
@@ -478,6 +496,9 @@ def get_dashboard_html() -> str:
             <div class="form-label"><span>連敗防止待機 (分)</span></div>
             <input type="number" id="cfg-sl-cool" class="form-input" step="5" min="5" max="60" value="15">
           </div>
+          <div style="margin-top:14px;">
+            <button class="btn btn-gold btn-block" onclick="confirmSaveControlConfig()">💾 運用パラメータを保存 (確認へ)</button>
+          </div>
         </div>
       </div>
 
@@ -529,9 +550,31 @@ def get_dashboard_html() -> str:
         </div>
       </div>
     </div>
+
+    <!-- 全体一括保存バー -->
+    <div class="card" style="margin-top:14px;background:rgba(245,158,11,0.06);border-color:rgba(245,158,11,0.3);text-align:center;">
+      <div style="font-size:13px;color:var(--text);margin-bottom:10px;">
+        💡 変更した稼働ロジック、リスク、許容スプレッド、AI方針を本番BOTへ反映します
+      </div>
+      <button class="btn btn-gold btn-block" style="padding:12px;font-size:14px;" onclick="confirmSaveControlConfig()">
+        💾 変更した運用設定を本番へ保存・反映 (確認へ)
+      </button>
+    </div>
     </div>
   </section>
 </main>
+
+<!-- ロック解除時にスマホ画面下部に固定追従する保存バー -->
+<div id="sticky-save-bar" class="sticky-save-bar">
+  <div>
+    <div style="font-size:12px;font-weight:800;color:var(--gold);">⚡ 設定編集中</div>
+    <div style="font-size:10px;color:var(--muted);">完了したら保存してください</div>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn btn-sm" onclick="toggleEditLock(false)">✖ 戻す</button>
+    <button class="btn btn-sm btn-gold" onclick="confirmSaveControlConfig()">💾 保存して反映</button>
+  </div>
+</div>
 
 <nav class="bottom-nav">
   <button class="nav-btn active" onclick="switchTab('live', this)"><span class="nav-icon">⚡</span><span>LIVE監視</span></button>
@@ -583,6 +626,14 @@ function switchTab(name, btn) {
   document.getElementById('tab-' + name).classList.add('active');
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
+  const stickyBar = document.getElementById('sticky-save-bar');
+  if (stickyBar) {
+    if (name === 'control' && isEditUnlocked) {
+      stickyBar.classList.add('show');
+    } else {
+      stickyBar.classList.remove('show');
+    }
+  }
   if (name === 'lab') runBacktest();
 }
 
@@ -1042,7 +1093,75 @@ function renderAnalytics(st) {
     {label: '確定損益推移 (JPY)', color: '#10b981', data: eqCurve}
   ]);
 
-  document.getElementById('trades-tbody').innerHTML = trades.slice(0, 25).map(t => {
+  cachedTrades = trades;
+  renderTradesTable();
+}
+
+let tradesShowAll = false;
+let cachedTrades = [];
+
+function toggleTradeHistoryView() {
+  tradesShowAll = !tradesShowAll;
+  renderTradesTable();
+}
+
+function renderTradesTable() {
+  const tbody = document.getElementById('trades-tbody');
+  const infoEl = document.getElementById('trades-filter-info');
+  const btn = document.getElementById('btn-load-more-trades');
+  if (!tbody) return;
+
+  const trades = cachedTrades || [];
+  if (trades.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px;">トレード履歴はありません</td></tr>';
+    if (infoEl) infoEl.innerHTML = '';
+    if (btn) btn.style.display = 'none';
+    return;
+  }
+
+  // 直近3日（72時間）の基準
+  const cutoff = Date.now() - (3 * 24 * 60 * 60 * 1000);
+  const recent3d = [];
+  const older = [];
+
+  trades.forEach(t => {
+    // 保有中 (OPEN) は常に直近枠に含める
+    if (t.profit === null) {
+      recent3d.push(t);
+      return;
+    }
+    const tTime = t.time ? new Date(t.time.replace(' ', 'T')).getTime() : 0;
+    if (tTime && tTime >= cutoff) {
+      recent3d.push(t);
+    } else {
+      older.push(t);
+    }
+  });
+
+  // 直近3日以内が0件の場合は最新5件を初期表示
+  const baseList = recent3d.length > 0 ? recent3d : trades.slice(0, 5);
+  const displayList = tradesShowAll ? trades : baseList;
+
+  if (tradesShowAll) {
+    if (infoEl) infoEl.innerHTML = `<span class="badge gold">全 ${trades.length} 件を表示中</span>`;
+    if (btn) {
+      btn.style.display = 'inline-block';
+      btn.innerHTML = '▲ 過去3日分のみに折りたたむ';
+    }
+  } else {
+    const is3d = recent3d.length > 0;
+    if (infoEl) infoEl.innerHTML = `<span class="badge">${is3d ? '過去3日分' : '直近'} ${displayList.length}件 / 全${trades.length}件</span>`;
+    if (btn) {
+      if (trades.length > displayList.length) {
+        btn.style.display = 'inline-block';
+        btn.innerHTML = `▼ さらに過去の履歴を読み込む (+${trades.length - displayList.length}件)`;
+      } else {
+        btn.style.display = 'none';
+      }
+    }
+  }
+
+  tbody.innerHTML = displayList.map(t => {
     const p = t.profit !== null ? Math.round(Number(t.profit)) : null;
     const pTxt = p === null ? '<span class="badge gold">保有中 (OPEN)</span>' : `<strong class="${p >= 0 ? 'text-bull' : 'text-bear'}">${p >= 0 ? '¥+' : '¥'}${p.toLocaleString()}</strong>`;
     return `<tr>
@@ -1134,6 +1253,7 @@ function toggleEditLock(forceState=null) {
   const banner = document.getElementById('edit-lock-banner');
   const title = document.getElementById('edit-lock-title');
   const btn = document.getElementById('edit-lock-btn');
+  const stickyBar = document.getElementById('sticky-save-bar');
   if (isEditUnlocked) {
     zone.classList.add('unlocked');
     banner.classList.add('unlocked');
@@ -1141,6 +1261,7 @@ function toggleEditLock(forceState=null) {
     title.style.color = 'var(--bull)';
     btn.textContent = '🔒 編集ロックに戻す';
     btn.className = 'btn btn-sm';
+    if (stickyBar) stickyBar.classList.add('show');
   } else {
     zone.classList.remove('unlocked');
     banner.classList.remove('unlocked');
@@ -1148,6 +1269,7 @@ function toggleEditLock(forceState=null) {
     title.style.color = 'var(--gold)';
     btn.textContent = '🔓 ロックを解除して編集';
     btn.className = 'btn btn-sm btn-gold';
+    if (stickyBar) stickyBar.classList.remove('show');
     controlsInitialized = false;
     if (window._lastFetchedState) populateControls(window._lastFetchedState);
   }
